@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production AI App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fa-solid fa-layer-group"></i> Menu</h2>
+            <button id="close-sidebar" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-view="chat">
+                <i class="fa-solid fa-comments"></i> Chat
+            </button>
+            <button class="nav-item" data-view="upload">
+                <i class="fa-solid fa-upload"></i> Upload Documents
+            </button>
+            <button class="nav-item" data-view="history">
+                <i class="fa-solid fa-clock-rotate-left"></i> History
+            </button>
+            <button class="nav-item" data-view="metrics">
+                <i class="fa-solid fa-chart-line"></i> Metrics
+            </button>
+        </nav>
+        <div class="sidebar-footer">
+            <span class="version">v0.1.0</span>
+        </div>
+    </div>
+
+    <main class="app-container" id="main-container">
+        <header class="chat-header">
+            <button id="open-sidebar" class="icon-btn" title="Menu">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+            <div class="logo">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div class="header-info">
+                <h1>Production AI App</h1>
+                <span class="status"><span class="status-dot"></span> Online</span>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" class="icon-btn" title="Toggle Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <button id="new-chat-btn" class="icon-btn" title="New Chat">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="view-container">
+            <div class="view active" id="chat-view">
+                <div class="chat-window" id="chat-window">
+                    <div class="welcome-screen" id="welcome-screen">
+                        <div class="welcome-icon">
+                            <i class="fa-solid fa-sparkles"></i>
+                        </div>
+                        <h2>How can I help you today?</h2>
+                        <p>Ask anything. Our advanced RAG system will find the right answers.</p>
+                        <div class="suggestions">
+                            <button class="suggestion-btn" data-query="Explain what machine learning is in simple terms.">What is Machine Learning?</button>
+                            <button class="suggestion-btn" data-query="How does the semantic caching work in this app?">Explain Semantic Caching</button>
+                            <button class="suggestion-btn" data-query="What are the security layers used here?">Describe Security Layers</button>
+                        </div>
+                    </div>
+                    <div class="messages-container" id="messages-container"></div>
+                    <div class="typing-indicator hidden" id="typing-indicator">
+                        <div class="typing-bubble">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                        </div>
+                        <span class="typing-text">AI is thinking...</span>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <form id="chat-form" class="chat-form">
+                        <div class="input-wrapper glass-effect">
+                            <textarea id="user-input" placeholder="Type your message..." rows="1" autofocus></textarea>
+                            <button type="submit" id="send-btn" class="send-btn" disabled>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="input-footer">
+                            <span>Protected by 3-layer security guard</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="view" id="upload-view">
+                <div class="upload-container">
+                    <h2><i class="fa-solid fa-upload"></i> Upload Documents</h2>
+                    <p>Add documents to the knowledge base for retrieval.</p>
+                    <div class="upload-form">
+                        <div class="upload-drop-zone" id="drop-zone">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <p>Drag & drop files here or click to browse</p>
+                            <input type="file" id="file-input" multiple accept=".txt,.md,.json,.csv,.py,.js,.ts">
+                        </div>
+                        <div class="upload-manual">
+                            <h3>Or add manually</h3>
+                            <textarea id="manual-content" placeholder="Paste document content here..." rows="6"></textarea>
+                            <div class="manual-meta">
+                                <input type="text" id="manual-id" placeholder="Document ID (optional)">
+                                <input type="text" id="manual-source" placeholder="Source (e.g., docs, wiki)">
+                            </div>
+                            <button id="add-manual-btn" class="btn-primary">Add Document</button>
+                        </div>
+                        <div class="upload-queue" id="upload-queue"></div>
+                        <button id="upload-btn" class="btn-primary" disabled>Upload to Knowledge Base</button>
+                        <div class="upload-status" id="upload-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="history-view">
+                <div class="history-container">
+                    <h2><i class="fa-solid fa-clock-rotate-left"></i> Conversation History</h2>
+                    <div class="history-list" id="history-list">
+                        <p class="empty-state">No conversations yet. Start chatting to see history here.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="view" id="metrics-view">
+                <div class="metrics-container">
+                    <h2><i class="fa-solid fa-chart-line"></i> Metrics Dashboard</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3><i class="fa-solid fa-dollar-sign"></i> Cost Today</h3>
+                            <div class="metric-value" id="metric-cost">$0.00</div>
+                            <div class="metric-sub" id="metric-budget">Budget: $100.00</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3><i class="fa-solid fa-thumbs-up"></i> Avg Rating</h3>
+                            <div class="metric-value" id="metric-rating">-</div>
+                            <div class="metric-sub" id="metric-feedback-count">0 feedbacks</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3><i class="fa-solid fa-database"></i> Documents</h3>
+                            <div class="metric-value" id="metric-docs">0</div>
+                            <div class="metric-sub">In knowledge base</div>
+                        </div>
+                        <div class="metric-card">
+                            <h3><i class="fa-solid fa-bolt"></i> Cache Hit Rate</h3>
+                            <div class="metric-value" id="metric-cache">-</div>
+                            <div class="metric-sub">Semantic cache</div>
+                        </div>
+                    </div>
+                    <div class="model-breakdown" id="model-breakdown">
+                        <h3>Model Usage</h3>
+                        <div id="model-list"></div>
+                    </div>
+                    <button id="refresh-metrics" class="btn-primary"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="source-modal" class="modal hidden">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <h3>Source Document</h3>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="modal-body-content"></div>
+            <div class="modal-footer">
+                <span class="relevance-score" id="modal-score"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="conversation-modal" class="modal hidden">
+        <div class="modal-content glass-effect">
+            <div class="modal-header">
+                <h3>Conversation Details</h3>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" id="conversation-modal-body"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

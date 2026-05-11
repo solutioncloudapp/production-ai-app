@@ -1,0 +1,98 @@
+[
+  {
+    "id": "eval_001",
+    "query": "What is the capital of France?",
+    "expected_answer": "The capital of France is Paris.",
+    "category": "factual",
+    "difficulty": "easy",
+    "expected_sources": ["france_geography"],
+    "metadata": {
+      "topic": "geography",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_002",
+    "query": "Explain how machine learning works in simple terms.",
+    "expected_answer": "Machine learning is a type of artificial intelligence where computers learn from data without being explicitly programmed. They find patterns in data and use those patterns to make predictions or decisions.",
+    "category": "explanation",
+    "difficulty": "medium",
+    "expected_sources": ["ml_basics"],
+    "metadata": {
+      "topic": "machine_learning",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_003",
+    "query": "Compare Python and JavaScript for web development.",
+    "expected_answer": "Python and JavaScript serve different roles in web development. JavaScript runs in the browser and is essential for frontend development. Python is primarily used for backend development with frameworks like Django and Flask. JavaScript can also be used for backend with Node.js.",
+    "category": "comparison",
+    "difficulty": "hard",
+    "expected_sources": ["python_docs", "javascript_docs"],
+    "metadata": {
+      "topic": "programming",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_004",
+    "query": "What are the main features of the product?",
+    "expected_answer": "The product features include real-time search, semantic caching, multi-turn conversations, and document retrieval.",
+    "category": "product",
+    "difficulty": "easy",
+    "expected_sources": ["product_docs"],
+    "metadata": {
+      "topic": "product",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_005",
+    "query": "How do I reset my password?",
+    "expected_answer": "To reset your password, go to the login page and click 'Forgot Password'. Enter your email address and follow the instructions sent to your inbox.",
+    "category": "howto",
+    "difficulty": "easy",
+    "expected_sources": ["user_guide"],
+    "metadata": {
+      "topic": "support",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_006",
+    "query": "What is the difference between supervised and unsupervised learning?",
+    "expected_answer": "Supervised learning uses labeled data to train models, where the correct answer is known. Unsupervised learning finds patterns in unlabeled data without predefined categories.",
+    "category": "explanation",
+    "difficulty": "medium",
+    "expected_sources": ["ml_basics"],
+    "metadata": {
+      "topic": "machine_learning",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_007",
+    "query": "Write a Python function to calculate factorial.",
+    "expected_answer": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)",
+    "category": "code",
+    "difficulty": "easy",
+    "expected_sources": ["python_docs"],
+    "metadata": {
+      "topic": "programming",
+      "created_at": "2024-01-15"
+    }
+  },
+  {
+    "id": "eval_008",
+    "query": "What are the security best practices for API development?",
+    "expected_answer": "API security best practices include: authentication and authorization, input validation, rate limiting, HTTPS encryption, proper error handling, and regular security audits.",
+    "category": "explanation",
+    "difficulty": "hard",
+    "expected_sources": ["security_docs"],
+    "metadata": {
+      "topic": "security",
+      "created_at": "2024-01-15"
+    }
+  }
+]
