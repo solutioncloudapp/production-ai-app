@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 import structlog
-from fastapi import FastAPI, Request, Response
+from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -15,18 +15,15 @@ from app.components.vector_store import ChromaVectorStore
 from app.config import settings
 from app.models import ErrorResponse
 from app.prompts.registry import prompt_registry
+from app.security.auth import authenticate_health_check, authenticate_request
 from app.security.content_filter import ContentFilter
 from app.security.input_guard import InputGuard
 from app.security.output_filter import OutputFilter
+from app.security.rate_limiter import RateLimitMiddleware
 from app.services.conversation import conversation_memory
 from app.services.rag_pipeline import rag_pipeline
 from observability.cost_tracker import cost_tracker
 from observability.online_monitor import online_monitor
-from observability.tracer import tracer
-from app.security.output_filter import OutputFilter
-from app.services.conversation import conversation_memory
-from app.services.rag_pipeline import rag_pipeline
-from observability.cost_tracker import cost_tracker
 from observability.tracer import tracer
 
 logger = structlog.get_logger()
@@ -160,6 +157,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(RateLimitMiddleware)
+
 
 @app.middleware("http")
 async def trace_requests(request: Request, call_next):
@@ -173,7 +172,10 @@ async def trace_requests(request: Request, call_next):
 
 
 @app.post("/api/chat", response_model=dict)
-async def chat(request: Request):
+async def chat(
+    request: Request,
+    auth: dict = Depends(authenticate_request),
+):
     """Main chat endpoint with full security and observability."""
     body = await request.json()
     query = body.get("query", "")
@@ -251,7 +253,10 @@ async def chat(request: Request):
 
 
 @app.post("/api/chat/stream")
-async def chat_stream(request: Request):
+async def chat_stream(
+    request: Request,
+    auth: dict = Depends(authenticate_request),
+):
     """Streaming chat endpoint with Server-Sent Events."""
     body = await request.json()
     query = body.get("query", "")
@@ -337,7 +342,10 @@ async def chat_stream(request: Request):
 
 
 @app.post("/api/feedback")
-async def submit_feedback(request: Request):
+async def submit_feedback(
+    request: Request,
+    auth: dict = Depends(authenticate_request),
+):
     """Submit user feedback linked to trace."""
     body = await request.json()
     trace_id = body.get("trace_id")
@@ -354,7 +362,10 @@ async def submit_feedback(request: Request):
 
 
 @app.post("/api/documents")
-async def upload_documents(request: Request):
+async def upload_documents(
+    request: Request,
+    auth: dict = Depends(authenticate_request),
+):
     """Upload documents to the vector store."""
     body = await request.json()
     documents = body.get("documents", [])
@@ -393,14 +404,17 @@ async def upload_documents(request: Request):
 
 
 @app.get("/api/documents/stats")
-async def document_stats():
+async def document_stats(auth: dict = Depends(authenticate_request)):
     """Get vector store statistics."""
     stats = vector_store.get_stats()
     return stats
 
 
 @app.delete("/api/documents")
-async def delete_documents(request: Request):
+async def delete_documents(
+    request: Request,
+    auth: dict = Depends(authenticate_request),
+):
     """Delete documents from the vector store."""
     body = await request.json()
     ids = body.get("ids", [])
@@ -417,7 +431,10 @@ async def delete_documents(request: Request):
 
 
 @app.get("/api/conversations/{conversation_id}")
-async def get_conversation(conversation_id: str):
+async def get_conversation(
+    conversation_id: str,
+    auth: dict = Depends(authenticate_request),
+):
     """Get conversation history."""
     state = conversation_memory.get_state(conversation_id)
     if not state:
@@ -429,14 +446,17 @@ async def get_conversation(conversation_id: str):
 
 
 @app.delete("/api/conversations/{conversation_id}")
-async def delete_conversation(conversation_id: str):
+async def delete_conversation(
+    conversation_id: str,
+    auth: dict = Depends(authenticate_request),
+):
     """Delete conversation history."""
     await conversation_memory.clear(conversation_id)
     return {"status": "ok"}
 
 
 @app.get("/api/metrics/cost")
-async def cost_metrics():
+async def cost_metrics(auth: dict = Depends(authenticate_request)):
     """Get cost tracking metrics."""
     return {
         "budget": cost_tracker.get_budget_status(),
@@ -445,14 +465,14 @@ async def cost_metrics():
 
 
 @app.get("/api/metrics/feedback")
-async def feedback_metrics():
+async def feedback_metrics(auth: dict = Depends(authenticate_request)):
     """Get feedback metrics."""
     from observability.feedback import feedback_collector
     return feedback_collector.get_stats()
 
 
 @app.get("/api/metrics/monitoring")
-async def monitoring_metrics():
+async def monitoring_metrics(auth: dict = Depends(authenticate_request)):
     """Get online monitoring metrics."""
     metrics = online_monitor.get_current_metrics()
     alerts = online_monitor.check_drift()
@@ -463,13 +483,13 @@ async def monitoring_metrics():
 
 
 @app.get("/api/health")
-async def health():
+async def health(auth: dict = Depends(authenticate_health_check)):
     """Health check endpoint."""
     return {"status": "healthy"}
 
 
 @app.get("/api/metrics")
-async def metrics():
+async def metrics(auth: dict = Depends(authenticate_request)):
     """Prometheus metrics endpoint."""
     from prometheus_client import generate_latest
     return Response(content=generate_latest(), media_type="text/plain")

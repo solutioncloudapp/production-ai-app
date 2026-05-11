@@ -1,7 +1,7 @@
 """Centralized application configuration."""
 
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     allowed_origins: List[str] = Field(
         ["http://localhost:3000"], description="Allowed CORS origins"
     )
+    api_secret_key: Optional[str] = Field(None, description="Primary API key")
+    api_secondary_key: Optional[str] = Field(None, description="Secondary API key")
 
     # Cache Configuration
     cache_ttl_seconds: int = Field(3600, description="Cache TTL")

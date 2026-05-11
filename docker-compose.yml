@@ -30,15 +30,11 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
 
   db:
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -48,8 +44,6 @@ services:
 
   chromadb:
     image: chromadb/chroma:latest
-    ports:
-      - "8001:8000"
     volumes:
       - chroma_data:/chroma/chroma
 
