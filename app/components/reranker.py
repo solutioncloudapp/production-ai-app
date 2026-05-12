@@ -6,7 +6,7 @@ import structlog
 from langchain_core.documents import Document
 
 try:
-    from sentence_transformers import CrossEncoder  # type: ignore[import-not-found]
+    from sentence_transformers import CrossEncoder  # type: ignore
 
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
