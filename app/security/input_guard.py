@@ -1,7 +1,7 @@
 """Input guard for validating and sanitizing user input."""
 
 import re
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 import structlog
 
@@ -23,7 +23,7 @@ class InputGuard:
     """
 
     # Known injection patterns
-    INJECTION_PATTERNS = [
+    INJECTION_PATTERNS: ClassVar[list[str]] = [
         r"ignore\s+(previous|all)\s+(instructions|rules|prompts)",
         r"system\s*:\s*",
         r"<\|.*?\|>",
@@ -35,20 +35,16 @@ class InputGuard:
     ]
 
     # PII patterns
-    PII_PATTERNS = [
+    PII_PATTERNS: ClassVar[list[tuple[str, str]]] = [
         (r"\b\d{3}[-.]?\d{2}[-.]?\d{4}\b", "SSN"),
         (r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b", "Credit Card"),
         (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "Email"),
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize input guard."""
-        self._compiled_injections = [
-            re.compile(p, re.IGNORECASE) for p in self.INJECTION_PATTERNS
-        ]
-        self._compiled_pii = [
-            (re.compile(p), name) for p, name in self.PII_PATTERNS
-        ]
+        self._compiled_injections = [re.compile(p, re.IGNORECASE) for p in self.INJECTION_PATTERNS]
+        self._compiled_pii = [(re.compile(p), name) for p, name in self.PII_PATTERNS]
         logger.info("Initialized input guard")
 
     def validate(self, query: str) -> GuardResult:

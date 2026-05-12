@@ -1,7 +1,7 @@
 """Cost tracking per query and per component."""
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -47,7 +47,7 @@ class CostTracker:
             budget_limit=budget_limit,
         )
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize cost tracker."""
         logger.info("Cost tracker initialized")
 
@@ -83,9 +83,7 @@ class CostTracker:
         self._daily_cost += cost
 
         if conversation_id:
-            self._conversation_costs[conversation_id] = (
-                self._conversation_costs.get(conversation_id, 0) + cost
-            )
+            self._conversation_costs[conversation_id] = self._conversation_costs.get(conversation_id, 0) + cost
 
         # Check budget
         if self._daily_cost > self.budget_limit:
@@ -124,13 +122,13 @@ class CostTracker:
         self._check_reset()
         return self._daily_cost
 
-    def get_model_breakdown(self) -> Dict[str, Dict]:
+    def get_model_breakdown(self) -> Dict[str, Dict[str, Any]]:
         """Get cost breakdown by model.
 
         Returns:
             Dictionary with per-model cost stats.
         """
-        breakdown: Dict[str, Dict] = {}
+        breakdown: Dict[str, Dict[str, Any]] = {}
         for record in self._records:
             if record.model not in breakdown:
                 breakdown[record.model] = {
@@ -146,7 +144,7 @@ class CostTracker:
 
         return breakdown
 
-    def get_budget_status(self) -> Dict:
+    def get_budget_status(self) -> Dict[str, Any]:
         """Get current budget status.
 
         Returns:
@@ -158,14 +156,10 @@ class CostTracker:
             "daily_cost": round(self._daily_cost, 4),
             "budget_limit": self.budget_limit,
             "remaining": round(remaining, 4),
-            "utilization_pct": round(
-                (self._daily_cost / self.budget_limit) * 100, 2
-            ) if self.budget_limit > 0 else 0,
+            "utilization_pct": round((self._daily_cost / self.budget_limit) * 100, 2) if self.budget_limit > 0 else 0,
         }
 
-    def _calculate_cost(
-        self, model: str, input_tokens: int, output_tokens: int
-    ) -> float:
+    def _calculate_cost(self, model: str, input_tokens: int, output_tokens: int) -> float:
         """Calculate cost for token usage.
 
         Args:
@@ -181,7 +175,7 @@ class CostTracker:
         output_cost = (output_tokens / 1_000_000) * pricing["output"]
         return input_cost + output_cost
 
-    def _check_reset(self):
+    def _check_reset(self) -> None:
         """Reset daily cost if day has changed."""
         now = datetime.utcnow()
         if now.date() > self._last_reset.date():
@@ -189,7 +183,7 @@ class CostTracker:
             self._last_reset = now
             logger.info("Daily cost reset")
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all cost tracking."""
         self._records.clear()
         self._conversation_costs.clear()

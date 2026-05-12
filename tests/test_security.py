@@ -63,10 +63,10 @@ class TestInputGuard:
         assert "4111-1111-1111-1111" not in result.sanitized_query
 
     def test_sanitize_control_characters(self, guard):
-        dirty = "Hello\x00World\x1FTest"
+        dirty = "Hello\x00World\x1fTest"
         sanitized = guard.sanitize(dirty)
         assert "\x00" not in sanitized
-        assert "\x1F" not in sanitized
+        assert "\x1f" not in sanitized
 
     def test_sanitize_whitespace_normalization(self, guard):
         messy = "Hello    world\n\ntest"
@@ -107,11 +107,13 @@ class TestContentFilter:
         assert "self_harm" in result.flags
 
     def test_batch_check(self, filter):
-        results = filter.check_batch([
-            "Safe content",
-            "I hate everyone",
-            "Nice day today",
-        ])
+        results = filter.check_batch(
+            [
+                "Safe content",
+                "I hate everyone",
+                "Nice day today",
+            ]
+        )
         assert len(results) == 3
         assert results[0].is_safe
         assert not results[1].is_safe
@@ -127,6 +129,7 @@ class TestOutputFilter:
 
     def test_format_basic(self, filter):
         from app.models import SourceDocument
+
         sources = [SourceDocument(id="doc1", content="test", score=0.9)]
         response = filter.format("Hello world", sources)
         assert response.text == "Hello world"
@@ -139,6 +142,7 @@ class TestOutputFilter:
 
     def test_format_limits_sources(self, filter):
         from app.models import SourceDocument
+
         sources = [SourceDocument(id=f"doc{i}", content="test", score=0.9) for i in range(10)]
         response = filter.format("Test", sources)
         assert len(response.sources) <= filter.MAX_SOURCES

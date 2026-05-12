@@ -6,7 +6,12 @@ import pytest
 from langchain_core.documents import Document
 
 from app.components.hybrid_retriever import HybridRetriever
-from app.components.reranker import CrossEncoderReranker
+
+try:
+    from app.components.reranker import SENTENCE_TRANSFORMERS_AVAILABLE, CrossEncoderReranker
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+
 from app.models import SourceDocument
 
 
@@ -33,22 +38,25 @@ def sample_documents():
 def mock_vector_retriever():
     """Create mock vector retriever."""
     mock = AsyncMock()
-    mock.ainvoke = AsyncMock(return_value=[
-        Document(
-            page_content="Python is a programming language",
-            metadata={"id": "doc_1", "score": 0.9},
-        ),
-        Document(
-            page_content="Machine learning enables AI systems",
-            metadata={"id": "doc_3", "score": 0.7},
-        ),
-    ])
+    mock.ainvoke = AsyncMock(
+        return_value=[
+            Document(
+                page_content="Python is a programming language",
+                metadata={"id": "doc_1", "score": 0.9},
+            ),
+            Document(
+                page_content="Machine learning enables AI systems",
+                metadata={"id": "doc_3", "score": 0.7},
+            ),
+        ]
+    )
     return mock
 
 
 class TestCrossEncoderReranker:
     """Tests for CrossEncoderReranker."""
 
+    @pytest.mark.skipif(not SENTENCE_TRANSFORMERS_AVAILABLE, reason="sentence-transformers not installed")
     @pytest.mark.asyncio
     async def test_rerank_empty(self):
         """Test reranking with empty document list."""
@@ -56,6 +64,7 @@ class TestCrossEncoderReranker:
         result = await reranker.rerank("test query", [])
         assert result == []
 
+    @pytest.mark.skipif(not SENTENCE_TRANSFORMERS_AVAILABLE, reason="sentence-transformers not installed")
     @pytest.mark.asyncio
     async def test_rerank_orders_by_score(self, sample_documents):
         """Test that reranking orders documents by score."""
@@ -76,42 +85,40 @@ class TestHybridRetriever:
     """Tests for HybridRetriever."""
 
     @pytest.mark.asyncio
-    async def test_retrieve_combines_sources(
-        self, mock_vector_retriever, sample_documents
-    ):
+    async def test_retrieve_combines_sources(self, mock_vector_retriever, sample_documents):
         """Test that hybrid retriever combines vector and BM25 results."""
+        mock_reranker = AsyncMock()
+        mock_reranker.rerank = AsyncMock(return_value=sample_documents)
+
         retriever = HybridRetriever(
             vector_retriever=mock_vector_retriever,
             documents=sample_documents,
             top_k=5,
+            reranker=mock_reranker,
         )
 
-        with patch.object(retriever.reranker, "rerank") as mock_rerank:
-            mock_rerank.return_value = sample_documents
+        results = await retriever.retrieve("python programming")
 
-            results = await retriever.retrieve("python programming")
-
-            assert len(results) <= 5
-            mock_vector_retriever.ainvoke.assert_called_once()
+        assert len(results) <= 5
+        mock_vector_retriever.ainvoke.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_retrieve_returns_source_documents(
-        self, mock_vector_retriever, sample_documents
-    ):
+    async def test_retrieve_returns_source_documents(self, mock_vector_retriever, sample_documents):
         """Test that results are properly formatted as SourceDocuments."""
+        mock_reranker = AsyncMock()
+        mock_reranker.rerank = AsyncMock(return_value=sample_documents)
+
         retriever = HybridRetriever(
             vector_retriever=mock_vector_retriever,
             documents=sample_documents,
             top_k=5,
+            reranker=mock_reranker,
         )
 
-        with patch.object(retriever.reranker, "rerank") as mock_rerank:
-            mock_rerank.return_value = sample_documents
+        results = await retriever.retrieve("test")
 
-            results = await retriever.retrieve("test")
-
-            for result in results:
-                assert isinstance(result, SourceDocument)
-                assert hasattr(result, "id")
-                assert hasattr(result, "content")
-                assert hasattr(result, "score")
+        for result in results:
+            assert isinstance(result, SourceDocument)
+            assert hasattr(result, "id")
+            assert hasattr(result, "content")
+            assert hasattr(result, "score")

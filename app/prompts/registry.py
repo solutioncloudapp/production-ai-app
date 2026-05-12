@@ -1,6 +1,6 @@
 """Prompt registry for versioned, hot-swappable prompt management."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 from langchain_core.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
@@ -21,13 +21,13 @@ class PromptRegistry:
     - Validation of template variables
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize prompt registry."""
         self._templates: Dict[str, List[PromptTemplate]] = {}
         self._compiled: Dict[str, ChatPromptTemplate] = {}
         logger.info("Initialized prompt registry")
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Load and compile all prompt templates."""
         for prompt_id, config in PROMPT_TEMPLATES.items():
             template = PromptTemplate(
@@ -69,7 +69,7 @@ class PromptRegistry:
 
         return self._compiled[prompt_id]
 
-    def register(self, template: PromptTemplate):
+    def register(self, template: PromptTemplate) -> None:
         """Register a new prompt template.
 
         Args:
@@ -84,7 +84,7 @@ class PromptRegistry:
         self._compile(template.id, config)
         logger.info("Registered prompt template", id=template.id, version=template.version)
 
-    def list_prompts(self) -> List[Dict]:
+    def list_prompts(self) -> List[Dict[str, Any]]:
         """List all registered prompts.
 
         Returns:
@@ -93,12 +93,14 @@ class PromptRegistry:
         result = []
         for _prompt_id, versions in self._templates.items():
             for v in versions:
-                result.append({
-                    "id": v.id,
-                    "version": v.version,
-                    "variables": v.variables,
-                    "metadata": v.metadata,
-                })
+                result.append(
+                    {
+                        "id": v.id,
+                        "version": v.version,
+                        "variables": v.variables,
+                        "metadata": v.metadata,
+                    }
+                )
         return result
 
     def get_version(self, prompt_id: str) -> str:
@@ -114,7 +116,7 @@ class PromptRegistry:
             raise KeyError(f"Prompt '{prompt_id}' not found")
         return self._templates[prompt_id][-1].version
 
-    def _register(self, template: PromptTemplate):
+    def _register(self, template: PromptTemplate) -> None:
         """Internal registration logic.
 
         Args:
@@ -124,7 +126,7 @@ class PromptRegistry:
             self._templates[template.id] = []
         self._templates[template.id].append(template)
 
-    def _compile(self, prompt_id: str, config: Dict):
+    def _compile(self, prompt_id: str, config: Dict[str, Any]) -> None:
         """Compile prompt template into ChatPromptTemplate.
 
         Args:

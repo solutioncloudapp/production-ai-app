@@ -21,7 +21,7 @@ class QueryRewriter:
     - Query expansion for better retrieval
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize query rewriter."""
         self.llm = ChatOpenAI(model=settings.openai_model, temperature=0.1)
         logger.info("Initialized query rewriter")
@@ -43,9 +43,7 @@ class QueryRewriter:
         if not conversation_id:
             return query
 
-        summary, recent_messages = await conversation_memory.get_context(
-            conversation_id
-        )
+        summary, recent_messages = await conversation_memory.get_context(conversation_id)
 
         if not recent_messages:
             return query
@@ -64,7 +62,8 @@ class QueryRewriter:
         )
 
         response = await self.llm.ainvoke(messages)
-        rewritten = response.content.strip()
+        content = response.content if isinstance(response.content, str) else str(response.content)
+        rewritten = content.strip()
 
         logger.info(
             "Query rewritten",
@@ -87,11 +86,8 @@ class QueryRewriter:
         messages = prompt.format_messages(query=query)
 
         response = await self.llm.ainvoke(messages)
-        expansions = [
-            q.strip()
-            for q in response.content.split("\n")
-            if q.strip() and not q.strip().startswith("1.")
-        ]
+        content = response.content if isinstance(response.content, str) else str(response.content)
+        expansions = [q.strip() for q in content.split("\n") if q.strip() and not q.strip().startswith("1.")]
 
         # Always include original query
         if query not in expansions:
@@ -118,7 +114,8 @@ class QueryRewriter:
         messages = prompt.format_messages(query=query)
 
         response = await self.llm.ainvoke(messages)
-        result = response.content.strip()
+        result = response.content if isinstance(response.content, str) else str(response.content)
+        result = result.strip()
 
         if result.lower().startswith("clear"):
             return "", False

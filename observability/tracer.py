@@ -38,7 +38,7 @@ class Span:
         self.attributes: Dict[str, Any] = {}
         self.status = "ok"
 
-    def set_attribute(self, key: str, value: Any):
+    def set_attribute(self, key: str, value: Any) -> None:
         """Set span attribute.
 
         Args:
@@ -47,7 +47,7 @@ class Span:
         """
         self.attributes[key] = value
 
-    def end(self, status: str = "ok"):
+    def end(self, status: str = "ok") -> None:
         """End the span.
 
         Args:
@@ -67,7 +67,7 @@ class Span:
             return 0.0
         return (self.end_time - self.start_time).total_seconds() * 1000
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert span to dictionary.
 
         Returns:
@@ -96,14 +96,14 @@ class Tracer:
     - Trace ID propagation
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize tracer."""
         self._active_spans: Dict[str, Span] = {}
-        self._completed_traces: List[Dict] = []
+        self._completed_traces: List[Dict[str, Any]] = []
         self._exporter = None
         logger.info("Initialized tracer")
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize tracer with exporter."""
         logger.info("Tracer initialized")
 
@@ -134,7 +134,7 @@ class Tracer:
         """
         return current_trace_id.get()
 
-    def set_trace_id(self, trace_id: str):
+    def set_trace_id(self, trace_id: str) -> None:
         """Set current trace ID.
 
         Args:
@@ -142,7 +142,7 @@ class Tracer:
         """
         current_trace_id.set(trace_id)
 
-    def export_trace(self, trace_id: str) -> List[Dict]:
+    def export_trace(self, trace_id: str) -> List[Dict[str, Any]]:
         """Export all spans for a trace.
 
         Args:
@@ -151,15 +151,11 @@ class Tracer:
         Returns:
             List of span dictionaries.
         """
-        spans = [
-            s.to_dict()
-            for s in self._active_spans.values()
-            if s.trace_id == trace_id and s.end_time
-        ]
+        spans = [s.to_dict() for s in self._active_spans.values() if s.trace_id == trace_id and s.end_time]
         self._completed_traces.extend(spans)
         return spans
 
-    def get_traces(self) -> List[Dict]:
+    def get_traces(self) -> List[Dict[str, Any]]:
         """Get all completed traces.
 
         Returns:
@@ -167,7 +163,7 @@ class Tracer:
         """
         return self._completed_traces
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all trace data."""
         self._active_spans.clear()
         self._completed_traces.clear()
@@ -194,7 +190,7 @@ class SpanContext:
         """
         return self.span
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[type], exc_val: Optional[BaseException], exc_tb: Optional[Any]) -> None:
         """Exit span context.
 
         Args:

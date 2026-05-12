@@ -11,7 +11,7 @@ logger = structlog.get_logger()
 class VectorSearchTool:
     """Tool for semantic vector search over documents."""
 
-    def __init__(self, retriever=None):
+    def __init__(self, retriever: Optional[Any] = None) -> None:
         """Initialize vector search tool.
 
         Args:
@@ -20,7 +20,7 @@ class VectorSearchTool:
         self.retriever = retriever
         logger.info("Initialized vector search tool")
 
-    def set_retriever(self, retriever):
+    def set_retriever(self, retriever: Any) -> None:
         """Set the retriever instance.
 
         Args:
@@ -33,7 +33,7 @@ class VectorSearchTool:
         query: str,
         top_k: int = 5,
         filter_metadata: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """Search documents using vector similarity.
 
         Args:

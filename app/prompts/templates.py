@@ -1,8 +1,8 @@
 """Versioned prompt templates for all LLM interactions."""
 
-from typing import Dict
+from typing import Any, Dict
 
-PROMPT_TEMPLATES: Dict[str, Dict] = {
+PROMPT_TEMPLATES: Dict[str, Dict[str, Any]] = {
     "rag_generation": {
         "version": "1.2.0",
         "system": """You are a helpful AI assistant that answers questions based on the provided context.
@@ -26,19 +26,20 @@ Context:
     },
     "query_rewrite": {
         "version": "1.1.0",
-        "system": """You are a query rewriting assistant. Your job is to rewrite the user's latest query to be self-contained, incorporating relevant context from the conversation history.
-
-Rules:
-- Resolve pronouns and references using conversation context
-- Keep the original intent intact
-- Make the query self-contained (no external context needed)
-- Do not add information not present in the conversation
-- If the query is already self-contained, return it unchanged
-
-Conversation Summary: {summary}
-
-Recent Messages:
-{context}""",
+        "system": (
+            "You are a query rewriting assistant. Your job is to rewrite "
+            "the user's latest query to be self-contained, incorporating "
+            "relevant context from the conversation history.\n\n"
+            "Rules:\n"
+            "- Resolve pronouns and references using conversation context\n"
+            "- Keep the original intent intact\n"
+            "- Make the query self-contained (no external context needed)\n"
+            "- Do not add information not present in the conversation\n"
+            "- If the query is already self-contained, return it unchanged\n\n"
+            "Conversation Summary: {summary}\n\n"
+            "Recent Messages:\n"
+            "{context}"
+        ),
         "human": "Latest query: {query}\n\nRewritten query:",
         "variables": ["context", "query", "summary"],
         "metadata": {
@@ -49,13 +50,17 @@ Recent Messages:
     },
     "query_expand": {
         "version": "1.0.0",
-        "system": """Generate 3 alternative versions of the given query that would help retrieve relevant information. Each alternative should approach the query from a different angle or use different terminology.
-
-Rules:
-- Keep the same core intent
-- Use different but related terminology
-- Vary the specificity level
-- Return one query per line""",
+        "system": (
+            "Generate 3 alternative versions of the given query that would "
+            "help retrieve relevant information. Each alternative should "
+            "approach the query from a different angle or use different "
+            "terminology.\n\n"
+            "Rules:\n"
+            "- Keep the same core intent\n"
+            "- Use different but related terminology\n"
+            "- Vary the specificity level\n"
+            "- Return one query per line"
+        ),
         "human": "Original query: {query}",
         "variables": ["query"],
         "metadata": {
@@ -122,13 +127,16 @@ Provide a brief reason for your grade.""",
     },
     "query_decompose": {
         "version": "1.0.0",
-        "system": """Break down the user's query into independent sub-questions that can be answered separately. Each sub-question should be self-contained and answerable.
-
-Rules:
-- Break complex queries into 2-4 sub-questions
-- Each sub-question must be self-contained
-- Maintain the original intent
-- Return one sub-question per line""",
+        "system": (
+            "Break down the user's query into independent sub-questions "
+            "that can be answered separately. Each sub-question should be "
+            "self-contained and answerable.\n\n"
+            "Rules:\n"
+            "- Break complex queries into 2-4 sub-questions\n"
+            "- Each sub-question must be self-contained\n"
+            "- Maintain the original intent\n"
+            "- Return one sub-question per line"
+        ),
         "human": "Query: {query}",
         "variables": ["query"],
         "metadata": {

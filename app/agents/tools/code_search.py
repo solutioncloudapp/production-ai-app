@@ -1,6 +1,6 @@
 """Code search tool for codebase and API documentation lookup."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 from langchain_core.tools import tool
@@ -21,7 +21,7 @@ class CodeSearchTool:
         self._index: Dict[str, str] = {}
         logger.info("Initialized code search tool", repo_path=repo_path)
 
-    async def index_repository(self, path: str):
+    async def index_repository(self, path: str) -> None:
         """Index a code repository for search.
 
         Args:
@@ -35,26 +35,25 @@ class CodeSearchTool:
 
         for root, dirs, files in os.walk(path):
             # Skip hidden directories and common non-code dirs
-            dirs[:] = [
-                d for d in dirs
-                if not d.startswith(".") and d not in ["node_modules", "__pycache__", "venv"]
-            ]
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ["node_modules", "__pycache__", "venv"]]
 
             for file in files:
                 if self._is_code_file(file):
                     filepath = os.path.join(root, file)
                     try:
-                        async with asyncio.to_thread(open, filepath, "r") as f:
-                            content = await f.read()
+
+                        def _read_file(fp: str = filepath) -> str:
+                            with open(fp, "r") as f:
+                                return f.read()
+
+                        content = await asyncio.to_thread(_read_file)
                         self._index[filepath] = content
                     except Exception:
                         pass
 
         logger.info("Repository indexed", path=path, files=len(self._index))
 
-    async def search(
-        self, query: str, language: Optional[str] = None
-    ) -> List[Dict]:
+    async def search(self, query: str, language: Optional[str] = None) -> List[Dict[str, Any]]:
         """Search indexed code for relevant snippets.
 
         Args:
@@ -74,23 +73,21 @@ class CodeSearchTool:
             if query_lower in content.lower():
                 # Extract relevant lines
                 lines = content.split("\n")
-                matching_lines = [
-                    (i, line)
-                    for i, line in enumerate(lines)
-                    if query_lower in line.lower()
-                ]
+                matching_lines = [(i, line) for i, line in enumerate(lines) if query_lower in line.lower()]
 
                 for line_num, line in matching_lines[:3]:
                     start = max(0, line_num - 2)
                     end = min(len(lines), line_num + 3)
                     snippet = "\n".join(lines[start:end])
 
-                    results.append({
-                        "file": filepath,
-                        "line": line_num + 1,
-                        "snippet": snippet,
-                        "match": line.strip(),
-                    })
+                    results.append(
+                        {
+                            "file": filepath,
+                            "line": line_num + 1,
+                            "snippet": snippet,
+                            "match": line.strip(),
+                        }
+                    )
 
         logger.info("Code search complete", query=query, results=len(results))
         return results[:10]
@@ -105,8 +102,22 @@ class CodeSearchTool:
             True if file is a code file.
         """
         code_extensions = {
-            ".py", ".js", ".ts", ".jsx", ".tsx", ".java", ".go", ".rs",
-            ".rb", ".php", ".c", ".cpp", ".h", ".cs", ".swift", ".kt",
+            ".py",
+            ".js",
+            ".ts",
+            ".jsx",
+            ".tsx",
+            ".java",
+            ".go",
+            ".rs",
+            ".rb",
+            ".php",
+            ".c",
+            ".cpp",
+            ".h",
+            ".cs",
+            ".swift",
+            ".kt",
         }
         return any(filename.endswith(ext) for ext in code_extensions)
 

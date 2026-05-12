@@ -1,6 +1,6 @@
 """Content filter for policy compliance checking."""
 
-from typing import List
+from typing import ClassVar, List
 
 import structlog
 
@@ -21,22 +21,37 @@ class ContentFilter:
     """
 
     # Toxicity keywords (simplified - production would use ML model)
-    TOXIC_PATTERNS = [
-        "hate", "kill", "murder", "suicide", "bomb",
-        "terrorist", "extremist", "racist", "sexist",
+    TOXIC_PATTERNS: ClassVar[list[str]] = [
+        "hate",
+        "kill",
+        "murder",
+        "suicide",
+        "bomb",
+        "terrorist",
+        "extremist",
+        "racist",
+        "sexist",
     ]
 
     # Sexual content indicators
-    SEXUAL_PATTERNS = [
-        "sexual", "porn", "explicit", "nude", "naked",
+    SEXUAL_PATTERNS: ClassVar[list[str]] = [
+        "sexual",
+        "porn",
+        "explicit",
+        "nude",
+        "naked",
     ]
 
     # Violence indicators
-    VIOLENCE_PATTERNS = [
-        "violence", "torture", "abuse", "assault", "weapon",
+    VIOLENCE_PATTERNS: ClassVar[list[str]] = [
+        "violence",
+        "torture",
+        "abuse",
+        "assault",
+        "weapon",
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize content filter."""
         logger.info("Initialized content filter")
 
@@ -95,8 +110,12 @@ class ContentFilter:
             True if self-harm indicators found.
         """
         self_harm_phrases = [
-            "hurt myself", "end my life", "kill myself",
-            "self harm", "suicidal", "don't want to live",
+            "hurt myself",
+            "end my life",
+            "kill myself",
+            "self harm",
+            "suicidal",
+            "don't want to live",
         ]
         return any(phrase in content for phrase in self_harm_phrases)
 

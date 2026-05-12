@@ -1,12 +1,12 @@
 """Hybrid retriever combining vector search with BM25."""
 
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import structlog
 from langchain_community.retrievers import BM25Retriever
 from langchain_core.documents import Document
 
-from app.components.reranker import CrossEncoderReranker
+from app.components.reranker import SENTENCE_TRANSFORMERS_AVAILABLE, CrossEncoderReranker
 from app.models import SourceDocument
 
 logger = structlog.get_logger()
@@ -17,15 +17,18 @@ class HybridRetriever:
 
     def __init__(
         self,
-        vector_retriever,
+        vector_retriever: Any,
         documents: List[Document],
         top_k: int = 10,
         vector_weight: float = 0.7,
         bm25_weight: float = 0.3,
-    ):
+        reranker: Optional[CrossEncoderReranker] = None,
+    ) -> None:
         self.vector_retriever = vector_retriever
         self.bm25_retriever = BM25Retriever.from_documents(documents)
-        self.reranker = CrossEncoderReranker()
+        self.reranker = reranker
+        if self.reranker is None and SENTENCE_TRANSFORMERS_AVAILABLE:
+            self.reranker = CrossEncoderReranker()
         self.top_k = top_k
         self.vector_weight = vector_weight
         self.bm25_weight = bm25_weight
@@ -48,8 +51,11 @@ class HybridRetriever:
         # Combine and deduplicate
         combined = self._merge_results(vector_docs, bm25_docs)
 
-        # Rerank with cross-encoder
-        reranked = await self.reranker.rerank(query, combined)
+        # Rerank with cross-encoder if available
+        if self.reranker:
+            reranked = await self.reranker.rerank(query, combined)
+        else:
+            reranked = combined
 
         # Convert to SourceDocument format
         results = [
@@ -65,9 +71,7 @@ class HybridRetriever:
         logger.info("Hybrid retrieval complete", num_results=len(results))
         return results
 
-    def _merge_results(
-        self, vector_docs: List[Document], bm25_docs: List[Document]
-    ) -> List[Document]:
+    def _merge_results(self, vector_docs: List[Document], bm25_docs: List[Document]) -> List[Document]:
         """Merge and deduplicate results from both retrievers.
 
         Uses reciprocal rank fusion for combining rankings.
@@ -79,13 +83,13 @@ class HybridRetriever:
         Returns:
             Merged and deduplicated document list.
         """
-        doc_map = {}
+        doc_map: Dict[str, Dict[str, Any]] = {}
 
         for rank, doc in enumerate(vector_docs):
             doc_id = doc.metadata.get("id", doc.page_content[:50])
-            score = self.vector_weight / (rank + 1)
+            score: float = self.vector_weight / (rank + 1)
             if doc_id in doc_map:
-                doc_map[doc_id]["score"] += score
+                doc_map[doc_id]["score"] = doc_map[doc_id]["score"] + score
             else:
                 doc_map[doc_id] = {"doc": doc, "score": score}
 
@@ -93,7 +97,7 @@ class HybridRetriever:
             doc_id = doc.metadata.get("id", doc.page_content[:50])
             score = self.bm25_weight / (rank + 1)
             if doc_id in doc_map:
-                doc_map[doc_id]["score"] += score
+                doc_map[doc_id]["score"] = doc_map[doc_id]["score"] + score
             else:
                 doc_map[doc_id] = {"doc": doc, "score": score}
 

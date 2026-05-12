@@ -4,7 +4,14 @@ from typing import List
 
 import structlog
 from langchain_core.documents import Document
-from sentence_transformers import CrossEncoder
+
+try:
+    from sentence_transformers import CrossEncoder  # type: ignore[import-not-found]
+
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    CrossEncoder = None
 
 logger = structlog.get_logger()
 
@@ -18,13 +25,16 @@ class CrossEncoderReranker:
         Args:
             model_name: HuggingFace cross-encoder model name.
         """
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            raise ImportError(
+                "sentence-transformers is required for CrossEncoderReranker. "
+                "Install it with: pip install sentence-transformers"
+            )
         self.model = CrossEncoder(model_name)
         self.model_name = model_name
         logger.info("Initialized cross-encoder reranker", model=model_name)
 
-    async def rerank(
-        self, query: str, documents: List[Document], top_k: int = 10
-    ) -> List[Document]:
+    async def rerank(self, query: str, documents: List[Document], top_k: int = 10) -> List[Document]:
         """Rerank documents based on query relevance.
 
         Args:
@@ -60,9 +70,7 @@ class CrossEncoderReranker:
 
         return reranked[:top_k]
 
-    def rerank_sync(
-        self, query: str, documents: List[Document], top_k: int = 10
-    ) -> List[Document]:
+    def rerank_sync(self, query: str, documents: List[Document], top_k: int = 10) -> List[Document]:
         """Synchronous version of rerank.
 
         Args:
@@ -74,6 +82,5 @@ class CrossEncoderReranker:
             Reranked list of documents.
         """
         import asyncio
-        return asyncio.get_event_loop().run_until_complete(
-            self.rerank(query, documents, top_k)
-        )
+
+        return asyncio.get_event_loop().run_until_complete(self.rerank(query, documents, top_k))

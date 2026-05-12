@@ -1,6 +1,6 @@
 """Query router for intent classification and tool selection."""
 
-from typing import Dict, List
+from typing import ClassVar, Dict, List, cast
 
 import structlog
 from langchain_openai import ChatOpenAI
@@ -34,7 +34,7 @@ class QueryRouter:
     """
 
     # Intent-to-tools mapping
-    INTENT_TOOLS: Dict[IntentType, List[str]] = {
+    INTENT_TOOLS: ClassVar[Dict[IntentType, List[str]]] = {
         IntentType.GENERAL: ["vector_search"],
         IntentType.DOCUMENT: ["vector_search", "document_search"],
         IntentType.CODE: ["code_search", "vector_search"],
@@ -42,7 +42,7 @@ class QueryRouter:
         IntentType.CONVERSATIONAL: [],
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize query router."""
         self.llm = ChatOpenAI(
             model=settings.openai_model,
@@ -63,9 +63,8 @@ class QueryRouter:
         messages = prompt.format_messages(query=query)
 
         # Use structured output for reliable parsing
-        response = await self.llm.with_structured_output(RouteDecision).ainvoke(
-            messages
-        )
+        structured_llm = self.llm.with_structured_output(RouteDecision)
+        response = cast(RouteDecision, await structured_llm.ainvoke(messages))
 
         # Map string intent to enum
         try:

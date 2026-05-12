@@ -1,6 +1,6 @@
 """Document grader with self-correction loop for relevance scoring."""
 
-from typing import List
+from typing import List, cast
 
 import structlog
 from langchain_core.prompts import ChatPromptTemplate
@@ -47,9 +47,7 @@ class DocumentGrader:
             max_retries=max_retries,
         )
 
-    async def grade(
-        self, query: str, documents: List[SourceDocument]
-    ) -> List[SourceDocument]:
+    async def grade(self, query: str, documents: List[SourceDocument]) -> List[SourceDocument]:
         """Grade documents for relevance to query.
 
         Filters out irrelevant documents and scores remaining ones.
@@ -92,9 +90,7 @@ class DocumentGrader:
 
         return graded
 
-    async def _grade_with_correction(
-        self, query: str, content: str
-    ) -> GradeResult:
+    async def _grade_with_correction(self, query: str, content: str) -> GradeResult:
         """Grade with self-correction loop.
 
         If confidence is low, re-evaluate with modified prompt.
@@ -109,10 +105,7 @@ class DocumentGrader:
         result = await self._grade_once(query, content)
 
         # Self-correction: if score is near threshold, re-evaluate
-        if (
-            abs(result.score - self.confidence_threshold) < 0.1
-            and result.grade != "IRRELEVANT"
-        ):
+        if abs(result.score - self.confidence_threshold) < 0.1 and result.grade != "IRRELEVANT":
             logger.debug(
                 "Low confidence grade, applying self-correction",
                 score=result.score,
@@ -134,9 +127,7 @@ class DocumentGrader:
         prompt = prompt_registry.get("document_grade")
         messages = prompt.format_messages(query=query, document=content[:2000])
 
-        response = await self.llm.with_structured_output(GradeResult).ainvoke(
-            messages
-        )
+        response = await self.llm.with_structured_output(GradeResult).ainvoke(messages)
 
         # Map grade to numeric score
         score_map = {
@@ -144,13 +135,19 @@ class DocumentGrader:
             "PARTIAL": 0.5,
             "IRRELEVANT": 0.1,
         }
+        if isinstance(response, dict):
+            grade = response.get("grade", "PARTIAL")
+            score: float = score_map.get(grade, 0.5)
+            return GradeResult(
+                grade=grade,
+                score=score,
+                reason=response.get("reason", ""),
+            )
         response.score = score_map.get(response.grade, 0.5)
 
-        return response
+        return cast(GradeResult, response)
 
-    async def _grade_with_stricter_criteria(
-        self, query: str, content: str
-    ) -> GradeResult:
+    async def _grade_with_stricter_criteria(self, query: str, content: str) -> GradeResult:
         """Re-grade with stricter criteria for borderline cases.
 
         Args:
@@ -160,26 +157,35 @@ class DocumentGrader:
         Returns:
             Updated GradeResult.
         """
-        stricter_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are a strict document grader. Re-evaluate the document relevance with higher standards.
+        stricter_prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are a strict document grader. Re-evaluate the document relevance with higher standards.
 
 Only grade as RELEVANT if the document directly and comprehensively addresses the query.
-Otherwise, downgrade to PARTIAL or IRRELEVANT."""),
-            ("human", "Query: {query}\n\nDocument: {document}"),
-        ])
+Otherwise, downgrade to PARTIAL or IRRELEVANT.""",
+                ),
+                ("human", "Query: {query}\n\nDocument: {document}"),
+            ]
+        )
 
-        messages = stricter_prompt.format_messages(
-            query=query, document=content[:2000]
-        )
-        response = await self.llm.with_structured_output(GradeResult).ainvoke(
-            messages
-        )
+        messages = stricter_prompt.format_messages(query=query, document=content[:2000])
+        response = await self.llm.with_structured_output(GradeResult).ainvoke(messages)
 
         score_map = {
             "RELEVANT": 0.9,
             "PARTIAL": 0.5,
             "IRRELEVANT": 0.1,
         }
+        if isinstance(response, dict):
+            grade = response.get("grade", "PARTIAL")
+            score: float = score_map.get(grade, 0.5)
+            return GradeResult(
+                grade=grade,
+                score=score,
+                reason=response.get("reason", ""),
+            )
         response.score = score_map.get(response.grade, 0.5)
 
-        return response
+        return cast(GradeResult, response)

@@ -1,11 +1,12 @@
 """Tests for agents layer."""
 
-import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.models import SourceDocument
+import pytest
+
 from app.agents.document_grader import DocumentGrader
 from app.agents.query_decomposer import QueryDecomposer
+from app.models import SourceDocument
 from app.prompts.registry import prompt_registry
 
 
@@ -81,14 +82,10 @@ class TestQueryDecomposer:
     @pytest.mark.asyncio
     async def test_complex_query_decomposed(self, decomposer):
         decomposer.llm.ainvoke = AsyncMock(
-            return_value=MagicMock(
-                content="1. What is Python?\n2. What are Python's main features?"
-            )
+            return_value=MagicMock(content="1. What is Python?\n2. What are Python's main features?")
         )
 
-        result = await decomposer.decompose(
-            "What is Python and what are its main features and use cases?"
-        )
+        result = await decomposer.decompose("What is Python and what are its main features and use cases?")
 
         assert len(result) >= 1
         assert len(result) <= 4  # max_sub_queries
@@ -96,14 +93,10 @@ class TestQueryDecomposer:
     @pytest.mark.asyncio
     async def test_deduplication(self, decomposer):
         decomposer.llm.ainvoke = AsyncMock(
-            return_value=MagicMock(
-                content="1. What is Python?\n2. What is Python?\n3. How does Python work?"
-            )
+            return_value=MagicMock(content="1. What is Python?\n2. What is Python?\n3. How does Python work?")
         )
 
-        result = await decomposer.decompose(
-            "What is Python and how does it work? What is Python?"
-        )
+        result = await decomposer.decompose("What is Python and how does it work? What is Python?")
 
         # Should deduplicate
         queries_lower = [q.lower() for q in result]
@@ -114,10 +107,7 @@ class TestQueryDecomposer:
         with patch.object(decomposer, "decompose") as mock_decompose:
             mock_decompose.return_value = ["Sub-query 1", "Sub-query 2"]
 
-            await decomposer.decompose_with_context(
-                "How does this work?",
-                "This is about Python programming"
-            )
+            await decomposer.decompose_with_context("How does this work?", "This is about Python programming")
 
             assert mock_decompose.called
             # Check that context was included in the enhanced query

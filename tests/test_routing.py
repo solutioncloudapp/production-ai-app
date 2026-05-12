@@ -27,50 +27,56 @@ class TestQueryRouter:
     @pytest.mark.asyncio
     async def test_route_code_query(self, query_router):
         """Test routing for code-related queries."""
-        with patch.object(query_router.llm, "with_structured_output") as mock_output:
-            mock_output.return_value.ainvoke = AsyncMock(return_value=AsyncMock(
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke = AsyncMock(
+            return_value=AsyncMock(
                 intent="code",
                 confidence=0.9,
                 tools=["code_search"],
                 reasoning="Code-related query",
-            ))
+            )
+        )
+        object.__setattr__(query_router.llm, "with_structured_output", lambda *args, **kwargs: mock_llm)
+        result = await query_router.route("How do I write a Python function?")
 
-            result = await query_router.route("How do I write a Python function?")
-
-            assert result.intent == IntentType.CODE
-            assert "code_search" in result.tools
+        assert result.intent == IntentType.CODE
+        assert "code_search" in result.tools
 
     @pytest.mark.asyncio
     async def test_route_web_search_query(self, query_router):
         """Test routing for web search queries."""
-        with patch.object(query_router.llm, "with_structured_output") as mock_output:
-            mock_output.return_value.ainvoke = AsyncMock(return_value=AsyncMock(
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke = AsyncMock(
+            return_value=AsyncMock(
                 intent="web_search",
                 confidence=0.85,
                 tools=["web_search"],
                 reasoning="Requires current data",
-            ))
+            )
+        )
+        object.__setattr__(query_router.llm, "with_structured_output", lambda *args, **kwargs: mock_llm)
+        result = await query_router.route("What is the weather today?")
 
-            result = await query_router.route("What is the weather today?")
-
-            assert result.intent == IntentType.WEB_SEARCH
-            assert "web_search" in result.tools
+        assert result.intent == IntentType.WEB_SEARCH
+        assert "web_search" in result.tools
 
     @pytest.mark.asyncio
     async def test_route_conversational_query(self, query_router):
         """Test routing for conversational queries."""
-        with patch.object(query_router.llm, "with_structured_output") as mock_output:
-            mock_output.return_value.ainvoke = AsyncMock(return_value=AsyncMock(
+        mock_llm = AsyncMock()
+        mock_llm.ainvoke = AsyncMock(
+            return_value=AsyncMock(
                 intent="conversational",
                 confidence=0.95,
                 tools=[],
                 reasoning="Simple greeting",
-            ))
+            )
+        )
+        object.__setattr__(query_router.llm, "with_structured_output", lambda *args, **kwargs: mock_llm)
+        result = await query_router.route("Hello, how are you?")
 
-            result = await query_router.route("Hello, how are you?")
-
-            assert result.intent == IntentType.CONVERSATIONAL
-            assert result.tools == []
+        assert result.intent == IntentType.CONVERSATIONAL
+        assert result.tools == []
 
     def test_route_sync_fallback_code(self, query_router):
         """Test synchronous fallback routing for code queries."""
@@ -88,7 +94,7 @@ class TestQueryRouter:
 
     def test_route_sync_fallback_general(self, query_router):
         """Test synchronous fallback routing for general queries."""
-        result = query_router.route_sync("Tell me about machine learning")
+        result = query_router.route_sync("Explain quantum physics concepts")
 
         assert result.intent == IntentType.GENERAL
         assert "vector_search" in result.tools
@@ -104,11 +110,13 @@ class TestAdaptiveRouter:
             mock_select.return_value = ["vector_search", "document_search"]
 
             with patch("app.agents.adaptive_router.query_router") as mock_router:
-                mock_router.route = AsyncMock(return_value=RouteResult(
-                    intent=IntentType.DOCUMENT,
-                    confidence=0.8,
-                    tools=["vector_search"],
-                ))
+                mock_router.route = AsyncMock(
+                    return_value=RouteResult(
+                        intent=IntentType.DOCUMENT,
+                        confidence=0.8,
+                        tools=["vector_search"],
+                    )
+                )
 
                 result = await adaptive_router.route("Find the document about Python")
 

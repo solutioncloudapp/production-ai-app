@@ -1,6 +1,6 @@
 """Adaptive router for dynamic tool selection based on query analysis."""
 
-from typing import ClassVar, Dict, List, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional, cast
 
 import structlog
 from langchain_openai import ChatOpenAI
@@ -40,13 +40,13 @@ class AdaptiveRouter:
         "document_search": ["full_text_search", "metadata_filter"],
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize adaptive router."""
         self.llm = ChatOpenAI(model=settings.openai_model, temperature=0)
-        self._tool_registry: Dict[str, callable] = {}
+        self._tool_registry: Dict[str, Callable[..., Any]] = {}
         logger.info("Initialized adaptive router")
 
-    def register_tool(self, name: str, handler: callable):
+    def register_tool(self, name: str, handler: Callable[..., Any]) -> None:
         """Register a tool handler.
 
         Args:
@@ -85,9 +85,7 @@ class AdaptiveRouter:
 
         return result
 
-    async def _select_tools(
-        self, query: str, base_route: RouteResult
-    ) -> List[str]:
+    async def _select_tools(self, query: str, base_route: RouteResult) -> List[str]:
         """Select tools adaptively based on query characteristics.
 
         Args:
@@ -131,11 +129,20 @@ class AdaptiveRouter:
         # Multiple question marks or conjunctions suggest complexity
         complex_indicators = [
             query.count("?") > 1,
-            any(word in query.lower() for word in [
-                "compare", "difference", "versus", "vs",
-                "pros and cons", "advantages and disadvantages",
-                "how does", "why does", "explain how",
-            ]),
+            any(
+                word in query.lower()
+                for word in [
+                    "compare",
+                    "difference",
+                    "versus",
+                    "vs",
+                    "pros and cons",
+                    "advantages and disadvantages",
+                    "how does",
+                    "why does",
+                    "explain how",
+                ]
+            ),
             len(query.split()) > 20,
         ]
         return any(complex_indicators)
@@ -154,7 +161,7 @@ class AdaptiveRouter:
             enhanced.insert(0, "vector_search")
         return enhanced
 
-    async def execute_tool(self, tool_name: str, **kwargs) -> Optional[Dict]:
+    async def execute_tool(self, tool_name: str, **kwargs: Any) -> Optional[Dict[str, Any]]:
         """Execute a registered tool.
 
         Args:
@@ -172,7 +179,7 @@ class AdaptiveRouter:
         try:
             result = await handler(**kwargs)
             logger.info("Tool executed", tool=tool_name)
-            return result
+            return cast(Optional[Dict[str, Any]], result)
         except Exception as e:
             logger.error("Tool execution failed", tool=tool_name, error=str(e))
             return None

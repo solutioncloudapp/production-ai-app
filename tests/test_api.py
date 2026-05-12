@@ -17,25 +17,29 @@ def client():
 @pytest.fixture
 def mock_pipeline():
     with patch("app.main.rag_pipeline") as mock:
-        mock.execute = AsyncMock(return_value=PipelineResult(
-            response="Test response",
-            sources=[SourceDocument(id="doc1", content="Test content", score=0.9)],
-            input_tokens=100,
-            output_tokens=50,
-            cache_hit=False,
-            latency_ms=150.0,
-        ))
+        mock.execute = AsyncMock(
+            return_value=PipelineResult(
+                response="Test response",
+                sources=[SourceDocument(id="doc1", content="Test content", score=0.9)],
+                input_tokens=100,
+                output_tokens=50,
+                cache_hit=False,
+                latency_ms=150.0,
+            )
+        )
         yield mock
 
 
 @pytest.fixture
 def mock_router():
     with patch("app.main.adaptive_router") as mock:
-        mock.route = AsyncMock(return_value=RouteResult(
-            intent=IntentType.GENERAL,
-            confidence=0.9,
-            tools=["vector_search"],
-        ))
+        mock.route = AsyncMock(
+            return_value=RouteResult(
+                intent=IntentType.GENERAL,
+                confidence=0.9,
+                tools=["vector_search"],
+            )
+        )
         yield mock
 
 

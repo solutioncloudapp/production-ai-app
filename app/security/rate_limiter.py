@@ -40,9 +40,7 @@ class RateLimiter:
         window_start = now - self.window_seconds
 
         # Clean old entries
-        self._requests[client_id] = [
-            ts for ts in self._requests[client_id] if ts > window_start
-        ]
+        self._requests[client_id] = [ts for ts in self._requests[client_id] if ts > window_start]
 
         if len(self._requests[client_id]) >= self.max_requests:
             return False
@@ -61,9 +59,7 @@ class RateLimiter:
         """
         now = time.time()
         window_start = now - self.window_seconds
-        current_count = len(
-            [ts for ts in self._requests[client_id] if ts > window_start]
-        )
+        current_count = len([ts for ts in self._requests[client_id] if ts > window_start])
         return max(0, self.max_requests - current_count)
 
 
@@ -77,9 +73,7 @@ rate_limiter = RateLimiter(
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for rate limiting."""
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Process request with rate limiting.
 
         Args:

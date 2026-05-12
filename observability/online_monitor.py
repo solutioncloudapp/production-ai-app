@@ -80,11 +80,11 @@ class OnlineMonitor:
 
         logger.info("Initialized online monitor")
 
-    def initialize(self):
+    def initialize(self) -> None:
         """Initialize online monitor."""
         logger.info("Online monitor initialized")
 
-    def record_query(self, latency_ms: float, is_cache_hit: bool):
+    def record_query(self, latency_ms: float, is_cache_hit: bool) -> None:
         """Record a query execution.
 
         Args:
@@ -104,13 +104,13 @@ class OnlineMonitor:
             cache_hit=is_cache_hit,
         )
 
-    def record_error(self):
+    def record_error(self) -> None:
         """Record a query error."""
         now = datetime.utcnow()
         self._errors.append(now)
         self._cleanup_old_entries(now)
 
-    def record_feedback(self, rating: int):
+    def record_feedback(self, rating: int) -> None:
         """Record user feedback.
 
         Args:
@@ -149,20 +149,14 @@ class OnlineMonitor:
 
         # Cache hit rate
         cache_values = [hit for _, hit in self._cache_hits]
-        cache_hit_rate = (
-            sum(cache_values) / len(cache_values) if cache_values else 0.0
-        )
+        cache_hit_rate = sum(cache_values) / len(cache_values) if cache_values else 0.0
 
         # Error rate
-        error_rate = (
-            len(self._errors) / total_queries if total_queries > 0 else 0.0
-        )
+        error_rate = len(self._errors) / total_queries if total_queries > 0 else 0.0
 
         # Feedback score
         feedback_values = [score for _, score in self._feedback_scores]
-        feedback_score = (
-            sum(feedback_values) / len(feedback_values) if feedback_values else 0.0
-        )
+        feedback_score = sum(feedback_values) / len(feedback_values) if feedback_values else 0.0
 
         # Queries per minute
         if self._query_timestamps:
@@ -189,7 +183,7 @@ class OnlineMonitor:
         Returns:
             List of DriftAlert objects if drift detected.
         """
-        alerts = []
+        alerts: List[DriftAlert] = []
         metrics = self.get_current_metrics()
 
         if not self._query_timestamps:
@@ -213,24 +207,22 @@ class OnlineMonitor:
 
     def _check_latency_drift(self, metrics: MonitoringMetrics) -> List[DriftAlert]:
         """Check for latency degradation."""
-        alerts = []
+        alerts: List[DriftAlert] = []
         if self._baseline_latency <= 0:
             return alerts
 
-        latency_increase = (
-            (metrics.avg_latency_ms - self._baseline_latency)
-            / self._baseline_latency
-            * 100
-        )
+        latency_increase = (metrics.avg_latency_ms - self._baseline_latency) / self._baseline_latency * 100
         if latency_increase > 50:
-            alerts.append(DriftAlert(
-                alert_type="latency_degradation",
-                severity="high" if latency_increase > 100 else "medium",
-                message=f"Average latency increased by {latency_increase:.1f}%",
-                current_value=metrics.avg_latency_ms,
-                baseline_value=self._baseline_latency,
-                threshold=50.0,
-            ))
+            alerts.append(
+                DriftAlert(
+                    alert_type="latency_degradation",
+                    severity="high" if latency_increase > 100 else "medium",
+                    message=f"Average latency increased by {latency_increase:.1f}%",
+                    current_value=metrics.avg_latency_ms,
+                    baseline_value=self._baseline_latency,
+                    threshold=50.0,
+                )
+            )
         return alerts
 
     def _check_cache_drift(self, metrics: MonitoringMetrics) -> List[DriftAlert]:
@@ -239,32 +231,36 @@ class OnlineMonitor:
         if self._baseline_cache_hit_rate > 0:
             cache_drop = self._baseline_cache_hit_rate - metrics.cache_hit_rate
             if cache_drop > 0.2:
-                alerts.append(DriftAlert(
-                    alert_type="cache_hit_rate_drop",
-                    severity="medium",
-                    message=f"Cache hit rate dropped by {cache_drop:.1%}",
-                    current_value=metrics.cache_hit_rate,
-                    baseline_value=self._baseline_cache_hit_rate,
-                    threshold=0.2,
-                ))
+                alerts.append(
+                    DriftAlert(
+                        alert_type="cache_hit_rate_drop",
+                        severity="medium",
+                        message=f"Cache hit rate dropped by {cache_drop:.1%}",
+                        current_value=metrics.cache_hit_rate,
+                        baseline_value=self._baseline_cache_hit_rate,
+                        threshold=0.2,
+                    )
+                )
         return alerts
 
     def _check_feedback_drift(self, metrics: MonitoringMetrics) -> List[DriftAlert]:
         """Check for feedback score degradation."""
-        alerts = []
+        alerts: List[DriftAlert] = []
         if self._baseline_feedback_score <= 0:
             return alerts
 
         feedback_drop = self._baseline_feedback_score - metrics.feedback_score
         if feedback_drop > 1.0:
-            alerts.append(DriftAlert(
-                alert_type="feedback_score_drop",
-                severity="high",
-                message=f"Feedback score dropped by {feedback_drop:.1f}",
-                current_value=metrics.feedback_score,
-                baseline_value=self._baseline_feedback_score,
-                threshold=1.0,
-            ))
+            alerts.append(
+                DriftAlert(
+                    alert_type="feedback_score_drop",
+                    severity="high",
+                    message=f"Feedback score dropped by {feedback_drop:.1f}",
+                    current_value=metrics.feedback_score,
+                    baseline_value=self._baseline_feedback_score,
+                    threshold=1.0,
+                )
+            )
         return alerts
 
     def _check_threshold_violations(self, metrics: MonitoringMetrics) -> List[DriftAlert]:
@@ -272,44 +268,49 @@ class OnlineMonitor:
         alerts = []
 
         if metrics.avg_latency_ms > self._latency_threshold_ms:
-            alerts.append(DriftAlert(
-                alert_type="latency_threshold_exceeded",
-                severity="critical",
-                message=(
-                    f"Average latency {metrics.avg_latency_ms:.0f}ms exceeds "
-                    f"threshold {self._latency_threshold_ms:.0f}ms"
-                ),
-                current_value=metrics.avg_latency_ms,
-                baseline_value=self._latency_threshold_ms,
-                threshold=self._latency_threshold_ms,
-            ))
+            alerts.append(
+                DriftAlert(
+                    alert_type="latency_threshold_exceeded",
+                    severity="critical",
+                    message=(
+                        f"Average latency {metrics.avg_latency_ms:.0f}ms exceeds "
+                        f"threshold {self._latency_threshold_ms:.0f}ms"
+                    ),
+                    current_value=metrics.avg_latency_ms,
+                    baseline_value=self._latency_threshold_ms,
+                    threshold=self._latency_threshold_ms,
+                )
+            )
 
         if metrics.cache_hit_rate < self._cache_hit_threshold and len(self._cache_hits) > 10:
-            alerts.append(DriftAlert(
-                alert_type="low_cache_hit_rate",
-                severity="low",
-                message=(
-                    f"Cache hit rate {metrics.cache_hit_rate:.1%} below "
-                    f"threshold {self._cache_hit_threshold:.1%}"
-                ),
-                current_value=metrics.cache_hit_rate,
-                baseline_value=self._cache_hit_threshold,
-                threshold=self._cache_hit_threshold,
-            ))
+            alerts.append(
+                DriftAlert(
+                    alert_type="low_cache_hit_rate",
+                    severity="low",
+                    message=(
+                        f"Cache hit rate {metrics.cache_hit_rate:.1%} below threshold {self._cache_hit_threshold:.1%}"
+                    ),
+                    current_value=metrics.cache_hit_rate,
+                    baseline_value=self._cache_hit_threshold,
+                    threshold=self._cache_hit_threshold,
+                )
+            )
 
         if metrics.error_rate > 0.1 and metrics.total_queries > 10:
-            alerts.append(DriftAlert(
-                alert_type="high_error_rate",
-                severity="critical",
-                message=f"Error rate {metrics.error_rate:.1%} exceeds 10%",
-                current_value=metrics.error_rate,
-                baseline_value=0.0,
-                threshold=0.1,
-            ))
+            alerts.append(
+                DriftAlert(
+                    alert_type="high_error_rate",
+                    severity="critical",
+                    message=f"Error rate {metrics.error_rate:.1%} exceeds 10%",
+                    current_value=metrics.error_rate,
+                    baseline_value=0.0,
+                    threshold=0.1,
+                )
+            )
 
         return alerts
 
-    def update_baselines(self):
+    def update_baselines(self) -> None:
         """Update baseline metrics from current values."""
         metrics = self.get_current_metrics()
         self._baseline_latency = metrics.avg_latency_ms
@@ -317,7 +318,7 @@ class OnlineMonitor:
         self._baseline_feedback_score = metrics.feedback_score
         logger.info("Baselines updated")
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all monitoring data."""
         self._latencies.clear()
         self._cache_hits.clear()
@@ -329,7 +330,7 @@ class OnlineMonitor:
         self._baseline_feedback_score = 0.0
         logger.info("Online monitor reset")
 
-    def _cleanup_old_entries(self, now: datetime):
+    def _cleanup_old_entries(self, now: datetime) -> None:
         """Remove entries outside the sliding window.
 
         Args:

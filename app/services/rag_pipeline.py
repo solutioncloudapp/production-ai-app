@@ -1,7 +1,7 @@
 """Main RAG pipeline orchestrating retrieval, grading, and generation."""
 
 import time
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import structlog
 from langchain_openai import ChatOpenAI
@@ -26,7 +26,7 @@ logger = structlog.get_logger()
 class RAGPipeline:
     """Main RAG pipeline with self-correcting retrieval."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.llm = ChatOpenAI(
             model=settings.openai_model,
             temperature=0.1,
@@ -35,7 +35,7 @@ class RAGPipeline:
         self.decomposer = QueryDecomposer()
         self.retriever: Optional[HybridRetriever] = None
 
-    def set_retriever(self, retriever: HybridRetriever):
+    def set_retriever(self, retriever: HybridRetriever) -> None:
         """Set the hybrid retriever instance.
 
         Args:
@@ -87,9 +87,7 @@ class RAGPipeline:
             span.set_attribute("cache_hit", False)
 
             # Stage 2: Rewrite query with context
-            rewritten_query = await query_rewriter.rewrite(
-                query, conversation_id=conversation_id
-            )
+            rewritten_query = await query_rewriter.rewrite(query, conversation_id=conversation_id)
             span.set_attribute("rewritten_query", rewritten_query)
 
             # Stage 3: Decompose if complex
@@ -118,15 +116,11 @@ class RAGPipeline:
             )
 
             response = await self.llm.ainvoke(messages)
-            response_text = response.content
+            response_text = response.content if isinstance(response.content, str) else str(response.content)
 
             # Get token counts
-            input_tokens = response.response_metadata.get("token_usage", {}).get(
-                "prompt_tokens", 0
-            )
-            output_tokens = response.response_metadata.get("token_usage", {}).get(
-                "completion_tokens", 0
-            )
+            input_tokens = response.response_metadata.get("token_usage", {}).get("prompt_tokens", 0)
+            output_tokens = response.response_metadata.get("token_usage", {}).get("completion_tokens", 0)
 
             # Stage 6: Cache result
             await semantic_cache.store(
@@ -166,13 +160,13 @@ class RAGPipeline:
         Returns:
             Deduplicated list sorted by score.
         """
-        seen = {}
+        seen: Dict[str, SourceDocument] = {}
         for doc in documents:
             if doc.id not in seen or doc.score > seen[doc.id].score:
                 seen[doc.id] = doc
         return sorted(seen.values(), key=lambda d: d.score, reverse=True)
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Clean shutdown of pipeline resources."""
         logger.info("Shutting down RAG pipeline")
 

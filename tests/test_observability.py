@@ -1,6 +1,5 @@
 """Tests for observability layer."""
 
-
 import pytest
 
 from observability.cost_tracker import CostTracker

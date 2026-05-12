@@ -1,6 +1,6 @@
 """Web search tool for real-time information retrieval."""
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 import structlog
@@ -22,9 +22,7 @@ class WebSearchTool:
         self.client = httpx.AsyncClient(timeout=10.0)
         logger.info("Initialized web search tool")
 
-    async def search(
-        self, query: str, num_results: int = 5
-    ) -> List[Dict]:
+    async def search(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
         """Search the web for information.
 
         Args:
@@ -50,11 +48,13 @@ class WebSearchTool:
 
             results = []
             for item in data.get("organic", [])[:num_results]:
-                results.append({
-                    "title": item.get("title", ""),
-                    "snippet": item.get("snippet", ""),
-                    "url": item.get("link", ""),
-                })
+                results.append(
+                    {
+                        "title": item.get("title", ""),
+                        "snippet": item.get("snippet", ""),
+                        "url": item.get("link", ""),
+                    }
+                )
 
             logger.info("Web search complete", query=query[:50], num_results=len(results))
             return results
@@ -63,7 +63,7 @@ class WebSearchTool:
             logger.error("Web search failed", error=str(e))
             return []
 
-    async def close(self):
+    async def close(self) -> None:
         """Close HTTP client."""
         await self.client.aclose()
 

@@ -1,7 +1,7 @@
 """Conversation memory with sliding window and summarization."""
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import structlog
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -61,9 +61,7 @@ class ConversationMemory:
         """
         state = self._get_or_create(conversation_id)
 
-        state.messages.append(
-            ConversationMessage(role=role, content=content)
-        )
+        state.messages.append(ConversationMessage(role=role, content=content))
         state.updated_at = datetime.utcnow()
 
         # Trigger summarization if needed
@@ -78,9 +76,7 @@ class ConversationMemory:
 
         return state
 
-    async def get_context(
-        self, conversation_id: str
-    ) -> tuple[str, List[ConversationMessage]]:
+    async def get_context(self, conversation_id: str) -> tuple[str, List[ConversationMessage]]:
         """Get conversation context for LLM prompt.
 
         Returns summary + recent messages within window.
@@ -95,7 +91,7 @@ class ConversationMemory:
         if not state:
             return "", []
 
-        recent = state.messages[-self.window_size:]
+        recent = state.messages[-self.window_size :]
         return state.summary or "", recent
 
     def get_state(self, conversation_id: str) -> Optional[ConversationState]:
@@ -134,12 +130,10 @@ class ConversationMemory:
             Conversation state.
         """
         if conversation_id not in self._conversations:
-            self._conversations[conversation_id] = ConversationState(
-                conversation_id=conversation_id
-            )
+            self._conversations[conversation_id] = ConversationState(conversation_id=conversation_id)
         return self._conversations[conversation_id]
 
-    async def _summarize(self, state: ConversationState):
+    async def _summarize(self, state: ConversationState) -> None:
         """Generate summary of conversation history.
 
         Keeps the summary and drops older messages.
@@ -147,9 +141,7 @@ class ConversationMemory:
         Args:
             state: Conversation state to summarize.
         """
-        messages_text = "\n".join(
-            f"{m.role}: {m.content}" for m in state.messages
-        )
+        messages_text = "\n".join(f"{m.role}: {m.content}" for m in state.messages)
 
         prompt = f"""Summarize the following conversation in 2-3 sentences.
 Focus on the key topics and user intent.
@@ -160,10 +152,10 @@ Conversation:
 Summary:"""
 
         response = await self.llm.ainvoke([HumanMessage(content=prompt)])
-        state.summary = response.content
+        state.summary = response.content if isinstance(response.content, str) else str(response.content)
 
         # Keep only recent messages after summarization
-        state.messages = state.messages[-self.window_size:]
+        state.messages = state.messages[-self.window_size :]
 
         logger.info(
             "Summarized conversation",
@@ -171,9 +163,7 @@ Summary:"""
             summary_length=len(state.summary),
         )
 
-    def to_langchain_messages(
-        self, conversation_id: str
-    ) -> List:
+    def to_langchain_messages(self, conversation_id: str) -> List[Any]:
         """Convert conversation to LangChain message format.
 
         Args:
@@ -186,18 +176,14 @@ Summary:"""
         if not state:
             return []
 
-        messages = []
+        messages: List[Any] = []
 
         # Add summary as system message if exists
         if state.summary:
-            messages.append(
-                SystemMessage(
-                    content=f"Conversation summary: {state.summary}"
-                )
-            )
+            messages.append(SystemMessage(content=f"Conversation summary: {state.summary}"))
 
         # Add recent messages
-        for msg in state.messages[-self.window_size:]:
+        for msg in state.messages[-self.window_size :]:
             if msg.role == "user":
                 messages.append(HumanMessage(content=msg.content))
             elif msg.role == "assistant":

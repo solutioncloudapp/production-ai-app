@@ -61,9 +61,7 @@ class TestOfflineEvaluator:
 
             _results, _metrics = await evaluator.evaluate_subset(category="factual")
 
-            assert mock_eval.call_count == sum(
-                1 for c in evaluator._dataset if c.get("category") == "factual"
-            )
+            assert mock_eval.call_count == sum(1 for c in evaluator._dataset if c.get("category") == "factual")
 
     @pytest.mark.asyncio
     async def test_evaluate_subset_by_difficulty(self, evaluator):
@@ -82,22 +80,28 @@ class TestOfflineEvaluator:
 
             _results, _metrics = await evaluator.evaluate_subset(difficulty="easy")
 
-            assert mock_eval.call_count == sum(
-                1 for c in evaluator._dataset if c.get("difficulty") == "easy"
-            )
+            assert mock_eval.call_count == sum(1 for c in evaluator._dataset if c.get("difficulty") == "easy")
 
     def test_compute_metrics(self, evaluator):
         from app.models import EvalResult
 
         results = [
             EvalResult(
-                query="q1", expected_answer="a1", actual_answer="a1",
-                relevance_score=4.0, faithfulness_score=4.0, answer_relevance_score=4.0,
+                query="q1",
+                expected_answer="a1",
+                actual_answer="a1",
+                relevance_score=4.0,
+                faithfulness_score=4.0,
+                answer_relevance_score=4.0,
                 latency_ms=100.0,
             ),
             EvalResult(
-                query="q2", expected_answer="a2", actual_answer="a2",
-                relevance_score=3.0, faithfulness_score=3.0, answer_relevance_score=3.0,
+                query="q2",
+                expected_answer="a2",
+                actual_answer="a2",
+                relevance_score=3.0,
+                faithfulness_score=3.0,
+                answer_relevance_score=3.0,
                 latency_ms=200.0,
             ),
         ]

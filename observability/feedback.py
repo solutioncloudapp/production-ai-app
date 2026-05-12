@@ -1,7 +1,7 @@
 """Feedback collection linked to traces for continuous improvement."""
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import structlog
 
@@ -20,7 +20,7 @@ class FeedbackCollector:
     - Trend analysis
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize feedback collector."""
         self._feedback: List[FeedbackRecord] = []
         self._trace_feedback: Dict[str, FeedbackRecord] = {}
@@ -77,7 +77,7 @@ class FeedbackCollector:
         """
         return self._feedback
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> Dict[str, Any]:
         """Get feedback statistics.
 
         Returns:
@@ -91,7 +91,7 @@ class FeedbackCollector:
             }
 
         ratings = [f.rating for f in self._feedback]
-        distribution = {}
+        distribution: Dict[int, int] = {}
         for r in ratings:
             distribution[r] = distribution.get(r, 0) + 1
 
@@ -113,7 +113,7 @@ class FeedbackCollector:
         """
         return [f for f in self._feedback if f.rating < threshold]
 
-    def export_for_finetuning(self) -> List[Dict]:
+    def export_for_finetuning(self) -> List[Dict[str, Any]]:
         """Export high-rated feedback for fine-tuning.
 
         Returns:
@@ -130,7 +130,7 @@ class FeedbackCollector:
             for f in high_rated
         ]
 
-    def get_trend(self, window_hours: int = 24) -> List[Dict]:
+    def get_trend(self, window_hours: int = 24) -> List[Dict[str, Any]]:
         """Get feedback trend over time window.
 
         Args:
@@ -157,11 +157,13 @@ class FeedbackCollector:
 
         trend = []
         for hour, ratings in sorted(hourly.items()):
-            trend.append({
-                "hour": hour,
-                "count": len(ratings),
-                "avg_rating": sum(ratings) / len(ratings),
-            })
+            trend.append(
+                {
+                    "hour": hour,
+                    "count": len(ratings),
+                    "avg_rating": sum(ratings) / len(ratings),
+                }
+            )
 
         return trend
 

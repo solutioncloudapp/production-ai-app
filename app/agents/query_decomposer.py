@@ -51,7 +51,8 @@ class QueryDecomposer:
         messages = prompt.format_messages(query=query)
 
         response = await self.llm.ainvoke(messages)
-        sub_queries = self._parse_response(response.content)
+        content = response.content if isinstance(response.content, str) else str(response.content)
+        sub_queries = self._parse_response(content)
 
         # Deduplicate while preserving order
         seen = set()
@@ -102,9 +103,7 @@ class QueryDecomposer:
 
         return queries
 
-    async def decompose_with_context(
-        self, query: str, context: str
-    ) -> List[str]:
+    async def decompose_with_context(self, query: str, context: str) -> List[str]:
         """Decompose query with additional context.
 
         Useful for document-specific queries where context helps

@@ -64,16 +64,14 @@ class TestSemanticCache:
         query2 = "Tell me about the weather"
 
         with patch.object(cache, "_get_embedding") as mock_embed:
-            mock_embed.return_value = sample_embedding
+            # Use orthogonal-like vectors for clear miss
+            mock_embed.side_effect = lambda text: [0.1] * 1536 if "Python" in text else [-0.1] * 1536
 
             await cache.store(
                 query=query1,
                 response="Python answer",
                 sources=[],
             )
-
-            # Different embedding for lookup
-            mock_embed.return_value = [0.9] * 1536
 
             result = await cache.lookup(query2)
             assert result is None

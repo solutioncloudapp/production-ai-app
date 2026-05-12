@@ -23,7 +23,7 @@ class ChromaVectorStore:
     - Collection management
     """
 
-    def __init__(self, collection_name: str = "documents"):
+    def __init__(self, collection_name: str = "documents") -> None:
         """Initialize ChromaDB vector store.
 
         Args:
@@ -35,14 +35,14 @@ class ChromaVectorStore:
             port=settings.chroma_port,
             settings=ChromaSettings(anonymized_telemetry=False),
         )
-        self._collection = None
+        self._collection: Any = None
         logger.info(
             "Initialized ChromaDB vector store",
             host=settings.chroma_host,
             port=settings.chroma_port,
         )
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize or get the collection."""
         try:
             self._collection = self._client.get_or_create_collection(
@@ -122,8 +122,7 @@ class ChromaVectorStore:
             List of document IDs.
         """
         documents = [
-            Document(page_content=text, metadata=metadatas[i] if metadatas else {})
-            for i, text in enumerate(texts)
+            Document(page_content=text, metadata=metadatas[i] if metadatas else {}) for i, text in enumerate(texts)
         ]
         return await self.add_documents(documents, ids)
 
@@ -190,7 +189,7 @@ class ChromaVectorStore:
         logger.info("Deleted documents", count=len(ids))
         return True
 
-    async def clear(self):
+    async def clear(self) -> None:
         """Clear all documents from the collection."""
         if not self._collection:
             await self.initialize()
@@ -214,7 +213,7 @@ class ChromaVectorStore:
             "collection": self.collection_name,
         }
 
-    async def to_langchain_retriever(self):
+    async def to_langchain_retriever(self) -> "ChromaRetriever":
         """Create a LangChain-compatible retriever.
 
         Returns:
@@ -259,6 +258,7 @@ class ChromaRetriever:
             List of matching Documents.
         """
         import asyncio
+
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:

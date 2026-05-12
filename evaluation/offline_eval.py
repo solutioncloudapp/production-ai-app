@@ -217,9 +217,8 @@ class OfflineEvaluator:
 
         # Cosine similarity scaled to 1-5
         import numpy as np
-        similarity = float(np.dot(q_embed, a_embed) / (
-            np.linalg.norm(q_embed) * np.linalg.norm(a_embed)
-        ))
+
+        similarity = float(np.dot(q_embed, a_embed) / (np.linalg.norm(q_embed) * np.linalg.norm(a_embed)))
         return round(1 + similarity * 4, 2)
 
     def _compute_metrics(self, results: List[EvalResult]) -> EvalMetrics:
@@ -233,16 +232,16 @@ class OfflineEvaluator:
         """
         if not results:
             return EvalMetrics(
-                total_tests=0, passed_tests=0,
-                avg_relevance=0, avg_faithfulness=0,
-                avg_answer_relevance=0, avg_latency_ms=0,
+                total_tests=0,
+                passed_tests=0,
+                avg_relevance=0,
+                avg_faithfulness=0,
+                avg_answer_relevance=0,
+                avg_latency_ms=0,
                 pass_rate=0,
             )
 
-        passed = sum(
-            1 for r in results
-            if r.relevance_score >= 3.0 and r.faithfulness_score >= 3.0
-        )
+        passed = sum(1 for r in results if r.relevance_score >= 3.0 and r.faithfulness_score >= 3.0)
 
         return EvalMetrics(
             total_tests=len(results),

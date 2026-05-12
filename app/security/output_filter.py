@@ -1,7 +1,7 @@
 """Output filter for response validation and formatting."""
 
 import re
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import structlog
 
@@ -24,7 +24,7 @@ class OutputFilter:
     MAX_RESPONSE_LENGTH = 4000
     MAX_SOURCES = 5
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize output filter."""
         logger.info("Initialized output filter")
 
@@ -94,9 +94,7 @@ class OutputFilter:
 
         return sanitized
 
-    def _verify_citations(
-        self, content: str, sources: List[SourceDocument]
-    ) -> str:
+    def _verify_citations(self, content: str, sources: List[SourceDocument]) -> str:
         """Verify that citations reference actual sources.
 
         Args:
@@ -117,7 +115,7 @@ class OutputFilter:
 
         return content
 
-    def validate_json_response(self, content: str) -> Optional[dict]:
+    def validate_json_response(self, content: str) -> Optional[dict[str, Any]]:
         """Validate and parse JSON response.
 
         Args:
@@ -132,7 +130,9 @@ class OutputFilter:
             # Try to extract JSON from content
             json_match = re.search(r"\{.*\}", content, re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
+                result = json.loads(json_match.group())
+                if isinstance(result, dict):
+                    return result
             return None
         except json.JSONDecodeError:
             logger.warning("Invalid JSON response", content=content[:100])

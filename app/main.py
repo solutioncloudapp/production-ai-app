@@ -2,7 +2,7 @@
 
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Awaitable, Callable
 
 import structlog
 from fastapi import Depends, FastAPI, Request, Response
@@ -35,7 +35,7 @@ vector_store = ChromaVectorStore()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler."""
     logger.info("Starting application")
     prompt_registry.initialize()
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     await vector_store.initialize()
 
     # Create hybrid retriever with vector store
-    retriever = await vector_store.to_langchain_retriever(top_k=10)
+    retriever = await vector_store.to_langchain_retriever()
 
     # Seed sample documents if collection is empty
     stats = vector_store.get_stats()
@@ -55,6 +55,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize hybrid retriever with sample documents for BM25
     from langchain_core.documents import Document
+
     sample_docs = [
         Document(
             page_content="Python is a programming language known for readability.",
@@ -89,7 +90,7 @@ async def lifespan(app: FastAPI):
     await rag_pipeline.shutdown()
 
 
-async def _seed_documents():
+async def _seed_documents() -> None:
     """Seed initial documents into the vector store."""
     from langchain_core.documents import Document
 
@@ -131,8 +132,7 @@ async def _seed_documents():
         ),
         Document(
             page_content=(
-                "Security uses three layers: input guard, content filter, "
-                "and output filter for response sanitization."
+                "Security uses three layers: input guard, content filter, and output filter for response sanitization."
             ),
             metadata={"id": "seed_006", "source": "security_docs", "category": "security"},
         ),
@@ -161,7 +161,7 @@ app.add_middleware(RateLimitMiddleware)
 
 
 @app.middleware("http")
-async def trace_requests(request: Request, call_next):
+async def trace_requests(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """Add tracing to all requests."""
     with tracer.start_span("http_request") as span:
         span.set_attribute("http.method", request.method)
@@ -174,8 +174,8 @@ async def trace_requests(request: Request, call_next):
 @app.post("/api/chat", response_model=dict)
 async def chat(
     request: Request,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> JSONResponse | dict[str, Any]:
     """Main chat endpoint with full security and observability."""
     body = await request.json()
     query = body.get("query", "")
@@ -244,7 +244,7 @@ async def chat(
 
         # Record online monitoring
         online_monitor.record_query(
-            latency_ms=result.latency_ms if hasattr(result, 'latency_ms') else 0,
+            latency_ms=result.latency_ms if hasattr(result, "latency_ms") else 0,
             is_cache_hit=result.cache_hit,
         )
 
@@ -255,8 +255,8 @@ async def chat(
 @app.post("/api/chat/stream")
 async def chat_stream(
     request: Request,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> JSONResponse | StreamingResponse:
     """Streaming chat endpoint with Server-Sent Events."""
     body = await request.json()
     query = body.get("query", "")
@@ -287,6 +287,7 @@ async def chat_stream(
 
             # Send conversation ID
             import json
+
             yield f"data: {json.dumps({'event': 'conversation_id', 'data': conversation_id})}\n\n"
 
             # Execute pipeline
@@ -311,11 +312,11 @@ async def chat_stream(
 
             # Send response
             response_data = {
-                'event': 'response',
-                'data': {
-                    'text': filter_result.sanitized_content,
-                    'sources': [s.model_dump() for s in result.sources],
-                    'conversation_id': conversation_id,
+                "event": "response",
+                "data": {
+                    "text": filter_result.sanitized_content,
+                    "sources": [s.model_dump() for s in result.sources],
+                    "conversation_id": conversation_id,
                 },
             }
             yield f"data: {json.dumps(response_data)}\n\n"
@@ -328,7 +329,7 @@ async def chat_stream(
                 output_tokens=result.output_tokens,
             )
 
-            yield "data: {\"event\": \"done\"}\n\n"
+            yield 'data: {"event": "done"}\n\n'
 
     return StreamingResponse(
         event_generator(),
@@ -344,8 +345,8 @@ async def chat_stream(
 @app.post("/api/feedback")
 async def submit_feedback(
     request: Request,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> dict[str, str]:
     """Submit user feedback linked to trace."""
     body = await request.json()
     trace_id = body.get("trace_id")
@@ -353,6 +354,7 @@ async def submit_feedback(
     comment = body.get("comment", "")
 
     from observability.feedback import feedback_collector
+
     feedback_collector.record(trace_id, rating, comment)
 
     # Record feedback in online monitor
@@ -364,8 +366,8 @@ async def submit_feedback(
 @app.post("/api/documents")
 async def upload_documents(
     request: Request,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> JSONResponse | dict[str, Any]:
     """Upload documents to the vector store."""
     body = await request.json()
     documents = body.get("documents", [])
@@ -381,7 +383,7 @@ async def upload_documents(
 
     doc_objects = []
     for _i, doc in enumerate(documents):
-        doc_id = doc.get("id", f"upload_{uuid.uuid4()[:8]}")
+        doc_id = doc.get("id", f"upload_{str(uuid.uuid4())[:8]}")
         content = doc.get("content", "")
         doc_metadata = {**metadata, **doc.get("metadata", {}), "id": doc_id}
 
@@ -404,7 +406,7 @@ async def upload_documents(
 
 
 @app.get("/api/documents/stats")
-async def document_stats(auth: dict = Depends(authenticate_request)):
+async def document_stats(auth: dict[str, Any] = Depends(authenticate_request)) -> dict[str, Any]:
     """Get vector store statistics."""
     stats = vector_store.get_stats()
     return stats
@@ -413,8 +415,8 @@ async def document_stats(auth: dict = Depends(authenticate_request)):
 @app.delete("/api/documents")
 async def delete_documents(
     request: Request,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> JSONResponse | dict[str, Any]:
     """Delete documents from the vector store."""
     body = await request.json()
     ids = body.get("ids", [])
@@ -433,8 +435,8 @@ async def delete_documents(
 @app.get("/api/conversations/{conversation_id}")
 async def get_conversation(
     conversation_id: str,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> JSONResponse | dict[str, Any]:
     """Get conversation history."""
     state = conversation_memory.get_state(conversation_id)
     if not state:
@@ -448,15 +450,15 @@ async def get_conversation(
 @app.delete("/api/conversations/{conversation_id}")
 async def delete_conversation(
     conversation_id: str,
-    auth: dict = Depends(authenticate_request),
-):
+    auth: dict[str, Any] = Depends(authenticate_request),
+) -> dict[str, str]:
     """Delete conversation history."""
     await conversation_memory.clear(conversation_id)
     return {"status": "ok"}
 
 
 @app.get("/api/metrics/cost")
-async def cost_metrics(auth: dict = Depends(authenticate_request)):
+async def cost_metrics(auth: dict[str, Any] = Depends(authenticate_request)) -> dict[str, Any]:
     """Get cost tracking metrics."""
     return {
         "budget": cost_tracker.get_budget_status(),
@@ -465,14 +467,15 @@ async def cost_metrics(auth: dict = Depends(authenticate_request)):
 
 
 @app.get("/api/metrics/feedback")
-async def feedback_metrics(auth: dict = Depends(authenticate_request)):
+async def feedback_metrics(auth: dict[str, Any] = Depends(authenticate_request)) -> dict[str, Any]:
     """Get feedback metrics."""
     from observability.feedback import feedback_collector
+
     return feedback_collector.get_stats()
 
 
 @app.get("/api/metrics/monitoring")
-async def monitoring_metrics(auth: dict = Depends(authenticate_request)):
+async def monitoring_metrics(auth: dict[str, Any] = Depends(authenticate_request)) -> dict[str, Any]:
     """Get online monitoring metrics."""
     metrics = online_monitor.get_current_metrics()
     alerts = online_monitor.check_drift()
@@ -483,26 +486,27 @@ async def monitoring_metrics(auth: dict = Depends(authenticate_request)):
 
 
 @app.get("/api/health")
-async def health(auth: dict = Depends(authenticate_health_check)):
+async def health(auth: dict[str, Any] = Depends(authenticate_health_check)) -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy"}
 
 
 @app.get("/api/metrics")
-async def metrics(auth: dict = Depends(authenticate_request)):
+async def metrics(auth: dict[str, Any] = Depends(authenticate_request)) -> Response:
     """Prometheus metrics endpoint."""
     from prometheus_client import generate_latest
+
     return Response(content=generate_latest(), media_type="text/plain")
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Global exception handler."""
     logger.error("Unhandled exception", exc_info=exc)
     return JSONResponse(
         status_code=500,
         content=ErrorResponse(
             error="Internal server error",
-            detail=settings.environment == "development" and str(exc),
+            detail=str(exc) if settings.environment == "development" else None,
         ).model_dump(),
     )

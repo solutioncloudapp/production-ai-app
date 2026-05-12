@@ -1,6 +1,6 @@
 """API authentication middleware."""
 
-from typing import Optional
+from typing import Any, Optional
 
 import structlog
 from fastapi import Depends, HTTPException, Request, status
@@ -18,7 +18,7 @@ async def authenticate_request(
     request: Request,
     api_key: Optional[str] = Depends(api_key_header),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-) -> dict:
+) -> dict[str, Any]:
     """Authenticate API requests via API key or Bearer token.
 
     Args:
@@ -66,7 +66,7 @@ def _get_valid_api_keys() -> set[str]:
     return keys
 
 
-async def authenticate_health_check(request: Request) -> dict:
+async def authenticate_health_check(request: Request) -> dict[str, Any]:
     """Allow health check without authentication.
 
     Args:

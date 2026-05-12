@@ -17,11 +17,9 @@ class Settings(BaseSettings):
     )
 
     # LLM Configuration
-    openai_api_key: str = Field(..., description="OpenAI API key")
+    openai_api_key: str = Field(default="", description="OpenAI API key")
     openai_model: str = Field("gpt-4o", description="Primary LLM model")
-    openai_embedding_model: str = Field(
-        "text-embedding-3-small", description="Embedding model"
-    )
+    openai_embedding_model: str = Field("text-embedding-3-small", description="Embedding model")
 
     # Redis Configuration
     redis_url: str = Field("redis://localhost:6379", description="Redis URL")
@@ -45,35 +43,27 @@ class Settings(BaseSettings):
     # Security Configuration
     max_input_length: int = Field(4000, description="Max input length")
     rate_limit_per_minute: int = Field(60, description="Rate limit per minute")
-    allowed_origins: List[str] = Field(
-        ["http://localhost:3000"], description="Allowed CORS origins"
-    )
+    allowed_origins: List[str] = Field(["http://localhost:3000"], description="Allowed CORS origins")
     api_secret_key: Optional[str] = Field(None, description="Primary API key")
     api_secondary_key: Optional[str] = Field(None, description="Secondary API key")
 
     # Cache Configuration
     cache_ttl_seconds: int = Field(3600, description="Cache TTL")
-    cache_similarity_threshold: float = Field(
-        0.95, description="Cache similarity threshold"
-    )
+    cache_similarity_threshold: float = Field(0.95, description="Cache similarity threshold")
 
     # Evaluation Configuration
     eval_model: str = Field("gpt-4o-mini", description="Evaluation model")
-    eval_dataset_path: str = Field(
-        "evaluation/golden_dataset.json", description="Eval dataset path"
-    )
+    eval_dataset_path: str = Field("evaluation/golden_dataset.json", description="Eval dataset path")
 
     # Observability Configuration
-    otel_exporter_otlp_endpoint: str = Field(
-        "http://localhost:4317", description="OTLP endpoint"
-    )
+    otel_exporter_otlp_endpoint: str = Field("http://localhost:4317", description="OTLP endpoint")
     enable_cost_tracking: bool = Field(True, description="Enable cost tracking")
 
 
 @lru_cache
 def get_settings() -> Settings:
     """Get cached settings instance."""
-    return Settings()
+    return Settings(**{})
 
 
 settings = get_settings()

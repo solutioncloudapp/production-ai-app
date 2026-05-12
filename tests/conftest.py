@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from app.prompts.registry import prompt_registry
+
 
 @pytest.fixture(autouse=True)
 def mock_env_vars():
@@ -16,3 +18,11 @@ def mock_env_vars():
     os.environ["ALLOWED_ORIGINS"] = '["http://localhost:3000"]'
     yield
     # Clean up might not be necessary if using pytest-env, but we do it manually if needed.
+
+
+@pytest.fixture(autouse=True)
+def initialize_prompts():
+    """Initialize prompt registry for all tests."""
+    if not prompt_registry._templates:
+        prompt_registry.initialize()
+    yield

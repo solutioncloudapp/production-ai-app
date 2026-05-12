@@ -1,7 +1,7 @@
 """Semantic cache using embedding similarity for cache lookups."""
 
 import hashlib
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 import structlog
@@ -118,13 +118,13 @@ class SemanticCache:
             return True
         return False
 
-    async def clear(self):
+    async def clear(self) -> None:
         """Clear all cache entries."""
         self._cache.clear()
         self._embeddings_cache.clear()
         logger.info("Cleared semantic cache")
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:

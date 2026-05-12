@@ -148,45 +148,49 @@ class OnlineMonitor:
 
         # Check latency drift
         if self._baseline_metrics.avg_latency_ms > 0:
-            latency_deviation = abs(
-                current.avg_latency_ms - self._baseline_metrics.avg_latency_ms
-            ) / self._baseline_metrics.avg_latency_ms
+            latency_deviation = (
+                abs(current.avg_latency_ms - self._baseline_metrics.avg_latency_ms)
+                / self._baseline_metrics.avg_latency_ms
+            )
 
             if latency_deviation > self.alert_threshold:
-                alerts.append(DriftAlert(
-                    metric="latency",
-                    current_value=current.avg_latency_ms,
-                    baseline_value=self._baseline_metrics.avg_latency_ms,
-                    deviation=latency_deviation,
-                    severity="critical" if latency_deviation > 0.5 else "warning",
-                ))
+                alerts.append(
+                    DriftAlert(
+                        metric="latency",
+                        current_value=current.avg_latency_ms,
+                        baseline_value=self._baseline_metrics.avg_latency_ms,
+                        deviation=latency_deviation,
+                        severity="critical" if latency_deviation > 0.5 else "warning",
+                    )
+                )
 
         # Check error rate drift
         if current.error_rate > 0.1:  # More than 10% errors
-            alerts.append(DriftAlert(
-                metric="error_rate",
-                current_value=current.error_rate,
-                baseline_value=self._baseline_metrics.error_rate,
-                deviation=current.error_rate,
-                severity="critical",
-            ))
+            alerts.append(
+                DriftAlert(
+                    metric="error_rate",
+                    current_value=current.error_rate,
+                    baseline_value=self._baseline_metrics.error_rate,
+                    deviation=current.error_rate,
+                    severity="critical",
+                )
+            )
 
         # Check feedback score drift
-        if (
-            self._baseline_metrics.avg_feedback_score > 0
-            and len(self._feedback_scores) > 10
-        ):
-            feedback_deviation = abs(
-                current.avg_feedback_score - self._baseline_metrics.avg_feedback_score
-            ) / max(self._baseline_metrics.avg_feedback_score, 0.1)
+        if self._baseline_metrics.avg_feedback_score > 0 and len(self._feedback_scores) > 10:
+            feedback_deviation = abs(current.avg_feedback_score - self._baseline_metrics.avg_feedback_score) / max(
+                self._baseline_metrics.avg_feedback_score, 0.1
+            )
 
             if feedback_deviation > self.alert_threshold:
-                alerts.append(DriftAlert(
-                    metric="feedback_score",
-                    current_value=current.avg_feedback_score,
-                    baseline_value=self._baseline_metrics.avg_feedback_score,
-                    deviation=feedback_deviation,
-                ))
+                alerts.append(
+                    DriftAlert(
+                        metric="feedback_score",
+                        current_value=current.avg_feedback_score,
+                        baseline_value=self._baseline_metrics.avg_feedback_score,
+                        deviation=feedback_deviation,
+                    )
+                )
 
         if alerts:
             logger.warning(
