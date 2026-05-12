@@ -6,12 +6,12 @@ import structlog
 from langchain_core.documents import Document
 
 try:
-    from sentence_transformers import CrossEncoder  # type: ignore
+    from sentence_transformers import CrossEncoder
 
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
-    CrossEncoder = None
+    CrossEncoder = object
 
 logger = structlog.get_logger()
 
