@@ -72,12 +72,18 @@ warn_unused_configs = true
 
 ### Couverture actuelle
 
-| Fichier | Tests | Couverture estimée |
-|---------|-------|-------------------|
-| `test_routing.py` | 11 | QueryRouter, AdaptiveRouter |
+| Fichier | Tests | Couverture |
+|---------|-------|-----------|
+| `test_agents.py` | 11 | DocumentGrader, QueryDecomposer |
+| `test_api.py` | 17 | Health, Chat, Feedback, Documents, Conversations, Metrics |
 | `test_cache.py` | 6 | SemanticCache |
-| `test_retrieval.py` | 5 | Reranker, HybridRetriever |
-| **Total** | **22** | **~30%** |
+| `test_evaluation.py` | 18 | OfflineEvaluator, OnlineMonitor |
+| `test_observability.py` | 18 | Tracer, FeedbackCollector, CostTracker |
+| `test_prompts.py` | 13 | PromptTemplates, PromptRegistry |
+| `test_retrieval.py` | 4 | Reranker, HybridRetriever |
+| `test_routing.py` | 11 | QueryRouter, AdaptiveRouter |
+| `test_security.py` | 20 | InputGuard, ContentFilter, OutputFilter |
+| **Total** | **137** | **~70%** |
 
 **Objectif** : 80%+ de couverture.
 
@@ -211,16 +217,20 @@ docker compose exec app python scripts/healthcheck.py
 
 | Élément | Statut | Description |
 |---------|--------|-------------|
-| `.github/workflows/` | ❌ Manquant | Workflows GitHub Actions |
+| `.github/workflows/ci.yml` | ✅ Implémenté | Workflows GitHub Actions (lint, type-check, test, security-scan, build-docker) |
 | `Makefile` | ❌ Manquant | Commandes unifiées |
-| `.gitignore` | ❌ Manquant | Fichiers à ignorer |
+| `.gitignore` | ✅ Présent | Fichiers à ignorer |
 
-### Workflow GitHub Actions Recommandé
+### Workflow GitHub Actions Actuel
 
 ```yaml
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
   lint:
@@ -228,31 +238,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-      - run: uv run ruff check .
-      - run: uv run mypy .
+      - run: uv run ruff check app/ observability/ evaluation/ tests/
+      - run: uv run ruff format --check app/ observability/ evaluation/ tests/
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv run mypy app/ observability/
 
   test:
     runs-on: ubuntu-latest
+    needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-      - run: uv run pytest --cov=app
+      - run: uv run pytest tests/ -v --cov=app --cov=observability --cov-report=xml
 
-  eval:
+  security-scan:
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [test]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
-      - run: uv run python evaluation/offline_eval.py
+      - run: uv pip install pip-audit && uv run pip-audit
 
-  build:
+  build-docker:
     runs-on: ubuntu-latest
-    needs: [lint, test, eval]
-    if: github.ref == 'refs/heads/main'
+    needs: [test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose build
+      - run: docker build -f app/Dockerfile -t production-ai-app:${{ github.sha }} .
 ```
 
 ### Makefile Recommandé

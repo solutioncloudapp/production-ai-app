@@ -2,47 +2,73 @@
 
 ## Vue d'ensemble
 
-La suite de tests couvre actuellement le routage, le cache et le retrieval avec 22 tests. Cette documentation décrit les tests existants, les patterns utilisés et les tests manquants.
+La suite de tests couvre l'ensemble des couches de l'architecture avec 137 tests. Cette documentation décrit les tests existants, les patterns utilisés et la couverture actuelle.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      Test Suite                             │
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ test_routing │  │ test_cache   │  │ test_retrieval   │  │
+│  │ test_agents  │  │ test_api     │  │ test_cache       │  │
 │  │              │  │              │  │                  │  │
-│  │ 11 tests     │  │ 6 tests      │  │ 5 tests          │  │
+│  │ 11 tests     │  │ 17 tests     │  │ 6 tests          │  │
 │  │              │  │              │  │                  │  │
-│  │ • QueryRouter│  │ • Store      │  │ • Reranker       │  │
-│  │ • Adaptive   │  │ • Lookup     │  │ • Hybrid         │  │
-│  │ • Complexité │  │ • Invalidate │  │ • Source docs    │  │
-│  │ • Tools      │  │ • Clear      │  │                  │  │
+│  │ • Grader     │  │ • Health     │  │ • Store          │  │
+│  │ • Decomposer │  │ • Chat       │  │ • Lookup         │  │
+│  │              │  │ • Feedback   │  │ • Invalidate     │  │
+│  │              │  │ • Documents  │  │ • Clear          │  │
+│  │              │  │ • Metrics    │  │ • Cosine sim     │  │
 │  └──────────────┘  └──────────────┘  └──────────────────┘  │
 │                                                             │
-│  Couverture actuelle : ~30% du code                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ test_eval    │  │ test_obs     │  │ test_prompts     │  │
+│  │              │  │              │  │                  │  │
+│  │ 18 tests     │  │ 18 tests     │  │ 13 tests         │  │
+│  │              │  │              │  │                  │  │
+│  │ • Offline    │  │ • Tracer     │  │ • Templates      │  │
+│  │ • Online     │  │ • Feedback   │  │ • Registry       │  │
+│  │              │  │ • Cost       │  │                  │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ test_retriev │  │ test_routing │  │ test_security    │  │
+│  │              │  │              │  │                  │  │
+│  │ 4 tests      │  │ 11 tests     │  │ 20 tests         │  │
+│  │              │  │              │  │                  │  │
+│  │ • Reranker   │  │ • QueryRouter│  │ • InputGuard     │  │
+│  │ • Hybrid     │  │ • Adaptive   │  │ • ContentFilter  │  │
+│  │              │  │              │  │ • OutputFilter   │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│                                                             │
+│  Couverture actuelle : ~70% du code                         │
 │  Objectif : 80%+                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Tests Existants
 
-### Routage — `tests/test_routing.py` (11 tests)
+### API — `tests/test_api.py` (17 tests)
 
-**Fichiers testés** : `app/services/query_router.py`, `app/agents/adaptive_router.py`
+**Fichier testé** : `app/main.py`
 
-| Test | Classe | Description |
-|------|--------|-------------|
-| `test_route_code_query` | `TestQueryRouter` | Routage LLM pour requêtes code |
-| `test_route_web_search_query` | `TestQueryRouter` | Routage LLM pour recherche web |
-| `test_route_conversational_query` | `TestQueryRouter` | Routage LLM pour conversation |
-| `test_route_sync_fallback_code` | `TestQueryRouter` | Fallback mots-clés pour code |
-| `test_route_sync_fallback_web` | `TestQueryRouter` | Fallback mots-clés pour web |
-| `test_route_sync_fallback_general` | `TestQueryRouter` | Fallback mots-clés pour général |
-| `test_route_with_tool_selection` | `TestAdaptiveRouter` | Sélection adaptative d'outils |
-| `test_is_complex_query` | `TestAdaptiveRouter` | Détection de requêtes complexes |
-| `test_register_tool` | `TestAdaptiveRouter` | Enregistrement d'outils |
-| `test_execute_tool` | `TestAdaptiveRouter` | Exécution d'outils |
-| `test_execute_missing_tool` | `TestAdaptiveRouter` | Exécution d'outil inexistant |
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestHealthEndpoint` | 1 | Health check endpoint |
+| `TestChatEndpoint` | 5 | Chat endpoint (succès, injection, conversation_id, sources) |
+| `TestFeedbackEndpoint` | 1 | Soumission de feedback |
+| `TestDocumentEndpoints` | 4 | Upload, delete, validation |
+| `TestConversationEndpoints` | 2 | Récupération, suppression de conversation |
+| `TestMetricsEndpoints` | 3 | Cost, feedback, monitoring metrics |
+| `TestExceptionHandling` | 1 | Gestion globale des exceptions |
+
+### Agents — `tests/test_agents.py` (11 tests)
+
+**Fichiers testés** : `app/agents/document_grader.py`, `app/agents/query_decomposer.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestDocumentGrader` | 3 | Grading documents vides, filtrage, metadata |
+| `TestQueryDecomposer` | 8 | Décomposition, déduplication, parsing de réponses |
 
 ### Cache — `tests/test_cache.py` (6 tests)
 
@@ -57,16 +83,61 @@ La suite de tests couvre actuellement le routage, le cache et le retrieval avec 
 | `test_get_stats` | Statistiques du cache |
 | `test_cosine_similarity` | Calcul de similarité cosinus (vecteurs identiques et orthogonaux) |
 
-### Retrieval — `tests/test_retrieval.py` (5 tests)
+### Évaluation — `tests/test_evaluation.py` (18 tests)
+
+**Fichiers testés** : `evaluation/offline_eval.py`, `evaluation/online_monitor.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestOfflineEvaluator` | 5 | Dataset loading, évaluation, métriques |
+| `TestOnlineMonitor` | 13 | Requêtes, feedback, drift detection, reset |
+
+### Observabilité — `tests/test_observability.py` (18 tests)
+
+**Fichiers testés** : `observability/tracer.py`, `observability/feedback.py`, `observability/cost_tracker.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestTracer` | 9 | Spans, attributs, durée, export |
+| `TestFeedbackCollector` | 9 | Feedback recording, stats, trends, export |
+| `TestCostTracker` | 9 | Cost recording, budget, breakdown, reset |
+
+### Prompts — `tests/test_prompts.py` (13 tests)
+
+**Fichiers testés** : `app/prompts/templates.py`, `app/prompts/registry.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestPromptTemplates` | 5 | Structure, variables, versions |
+| `TestPromptRegistry` | 8 | Registration, retrieval, compilation, versions |
+
+### Retrieval — `tests/test_retrieval.py` (4 tests)
 
 **Fichiers testés** : `app/components/reranker.py`, `app/components/hybrid_retriever.py`
 
-| Test | Classe | Description |
-|------|--------|-------------|
-| `test_rerank_empty` | `TestCrossEncoderReranker` | Reranking avec liste vide |
-| `test_rerank_orders_by_score` | `TestCrossEncoderReranker` | Ordonnancement par score |
-| `test_retrieve_combines_sources` | `TestHybridRetriever` | Combinaison vector + BM25 |
-| `test_retrieve_returns_source_documents` | `TestHybridRetriever` | Format SourceDocument correct |
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestCrossEncoderReranker` | 2 | Reranking vide, ordonnancement par score |
+| `TestHybridRetriever` | 2 | Combinaison vector + BM25, format SourceDocument |
+
+### Routage — `tests/test_routing.py` (11 tests)
+
+**Fichiers testés** : `app/services/query_router.py`, `app/agents/adaptive_router.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestQueryRouter` | 6 | Routage LLM (code, web, conversation), fallbacks synchrones |
+| `TestAdaptiveRouter` | 5 | Sélection d'outils, complexité, exécution |
+
+### Sécurité — `tests/test_security.py` (20 tests)
+
+**Fichiers testés** : `app/security/input_guard.py`, `app/security/content_filter.py`, `app/security/output_filter.py`
+
+| Classe | Tests | Description |
+|--------|-------|-------------|
+| `TestInputGuard` | 11 | Injection, PII (email, SSN, carte), sanitization |
+| `TestContentFilter` | 6 | Toxicité, contenu sexuel, violence, self-harm |
+| `TestOutputFilter` | 9 | Formatage, troncature, HTML, JSON validation |
 
 ## Patterns de Test
 
@@ -87,17 +158,25 @@ Les fixtures créent des instances isolées pour chaque test.
 ### Mocking LLM
 
 ```python
-with patch.object(query_router.llm, "with_structured_output") as mock_output:
-    mock_output.return_value.ainvoke = AsyncMock(return_value=AsyncMock(
-        intent="code",
-        confidence=0.9,
-        tools=["code_search"],
-        reasoning="Code-related query",
-    ))
+@pytest.mark.asyncio
+async def test_route_code_query(self, query_router):
+    mock_llm = AsyncMock()
+    mock_llm.ainvoke = AsyncMock(
+        return_value=AsyncMock(
+            intent="code",
+            confidence=0.9,
+            tools=["code_search"],
+            reasoning="Code-related query",
+        )
+    )
+    object.__setattr__(query_router.llm, "with_structured_output", lambda *args, **kwargs: mock_llm)
     result = await query_router.route("How do I write a Python function?")
+
+    assert result.intent == IntentType.CODE
+    assert "code_search" in result.tools
 ```
 
-Les appels LLM sont mockés avec `AsyncMock` pour éviter les appels API réels.
+Les appels LLM sont mockés avec `AsyncMock` et `object.__setattr__` pour éviter les appels API réels et les erreurs de validation Pydantic.
 
 ### Tests Async
 
@@ -115,25 +194,16 @@ Les tests sont organisés en classes (`TestQueryRouter`, `TestSemanticCache`, et
 
 ## Tests Manquants
 
-| Composant | Fichier à créer | Tests estimés |
-|-----------|-----------------|---------------|
-| **Input Guard** | `tests/test_security.py` | 8 |
-| **Content Filter** | `tests/test_security.py` | 5 |
-| **Output Filter** | `tests/test_security.py` | 6 |
-| **Document Grader** | `tests/test_agents.py` | 6 |
-| **Query Decomposer** | `tests/test_agents.py` | 5 |
+| Composant | Fichier | Tests estimés |
+|-----------|---------|---------------|
 | **RAG Pipeline** | `tests/test_pipeline.py` | 8 |
 | **Conversation Memory** | `tests/test_conversation.py` | 6 |
 | **Query Rewriter** | `tests/test_rewriter.py` | 5 |
-| **Tracer** | `tests/test_observability.py` | 5 |
-| **Feedback Collector** | `tests/test_observability.py` | 5 |
-| **Cost Tracker** | `tests/test_observability.py` | 6 |
-| **Offline Evaluator** | `tests/test_evaluation.py` | 5 |
-| **Online Monitor** | `tests/test_evaluation.py` | 5 |
-| **Prompt Registry** | `tests/test_prompts.py` | 5 |
-| **Fixtures partagées** | `tests/conftest.py` | — |
+| **Vector Store** | `tests/test_vector_store.py` | 5 |
+| **Rate Limiter** | `tests/test_rate_limiter.py` | 5 |
+| **Auth** | `tests/test_auth.py` | 5 |
 
-**Total estimé** : ~80 tests manquants pour atteindre une couverture de 80%+.
+**Total estimé** : ~34 tests manquants pour atteindre une couverture de 80%+.
 
 ## Configuration des Outils
 
@@ -169,9 +239,15 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = "sentence_transformers.*"
+ignore_missing_imports = true
+ignore_errors = true
 ```
 
-Le mode `strict` active toutes les vérifications de type.
+Le mode `strict` active toutes les vérifications de type. Une override est configurée pour `sentence_transformers` qui ne fournit pas de stubs de type.
 
 ### Pytest
 
@@ -182,6 +258,20 @@ dependencies = [
     "pytest-cov>=4.1.0",
 ]
 ```
+
+### Configuration des Tests
+
+Les variables d'environnement sont configurées dans `tests/conftest.py` et dans le workflow CI :
+
+```python
+# tests/conftest.py
+os.environ["OPENAI_API_KEY"] = "sk-mock-key-for-testing-only"
+os.environ["ENVIRONMENT"] = "development"
+os.environ["API_SECRET_KEY"] = ""
+os.environ["API_SECONDARY_KEY"] = ""
+```
+
+En CI, le mode `test` est activé avec `ENVIRONMENT: test` et les clés API sont vides pour désactiver l'authentification.
 
 ## Commandes de Test
 

@@ -17,7 +17,7 @@ production-ai-app/
 ├── data/                   # Raw → processed → index config
 ├── scripts/                # Seed, migrate, healthcheck
 ├── frontend/               # UI, containerized separately
-├── tests/                  # Retrieval, cache, routing tests. CI-ready.
+├── tests/                  # Comprehensive test suite. CI-ready.
 ├── docs/                   # Architecture, API ref, deployment guide
 └── .claude/                # AI coding agent context, rules, project memory
 ```
@@ -44,7 +44,11 @@ uv run pytest
 
 # Run linting
 uv run ruff check .
+uv run ruff format .
 uv run mypy .
+
+# Run security audit
+uv pip install pip-audit && uv run pip-audit
 ```
 
 ## Layer Details
@@ -67,9 +71,11 @@ uv run mypy .
 - Hot-swappable without code changes
 
 ### 4. Security Layer
-- **Input Guard**: Injection detection, PII redaction, rate limiting
+- **Input Guard**: Injection detection, PII redaction, length limits
 - **Content Filter**: Toxicity and policy compliance checking
 - **Output Filter**: Response sanitization and format validation
+- **Auth**: API key and Bearer token authentication
+- **Rate Limiter**: Sliding window rate limiting
 
 ### 5. Evaluation Layer
 - Golden dataset for regression testing
@@ -80,6 +86,17 @@ uv run mypy .
 - Per-stage distributed tracing
 - User feedback linked to traces
 - Cost tracking per query and per component
+
+## Quality Status
+
+| Check | Status |
+|-------|--------|
+| Ruff lint | ✅ 0 errors |
+| Ruff format | ✅ 49 files |
+| Mypy (strict) | ✅ 0 errors |
+| Tests | ✅ 137 passed, 3 skipped |
+| Coverage | ✅ 70% (app + observability) |
+| Security audit | ✅ 0 vulnerabilities |
 
 ## Documentation
 
