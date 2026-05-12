@@ -171,7 +171,7 @@ async def trace_requests(request: Request, call_next: Callable[[Request], Awaita
         return response
 
 
-@app.post("/api/chat", response_model=dict)
+@app.post("/api/chat", response_model=None)
 async def chat(
     request: Request,
     auth: dict[str, Any] = Depends(authenticate_request),
@@ -252,7 +252,7 @@ async def chat(
         return final_response.model_dump()
 
 
-@app.post("/api/chat/stream")
+@app.post("/api/chat/stream", response_model=None)
 async def chat_stream(
     request: Request,
     auth: dict[str, Any] = Depends(authenticate_request),
@@ -363,7 +363,7 @@ async def submit_feedback(
     return {"status": "ok"}
 
 
-@app.post("/api/documents")
+@app.post("/api/documents", response_model=None)
 async def upload_documents(
     request: Request,
     auth: dict[str, Any] = Depends(authenticate_request),
@@ -412,7 +412,7 @@ async def document_stats(auth: dict[str, Any] = Depends(authenticate_request)) -
     return stats
 
 
-@app.delete("/api/documents")
+@app.delete("/api/documents", response_model=None)
 async def delete_documents(
     request: Request,
     auth: dict[str, Any] = Depends(authenticate_request),
@@ -432,7 +432,7 @@ async def delete_documents(
     return {"status": "ok", "deleted": len(ids)}
 
 
-@app.get("/api/conversations/{conversation_id}")
+@app.get("/api/conversations/{conversation_id}", response_model=None)
 async def get_conversation(
     conversation_id: str,
     auth: dict[str, Any] = Depends(authenticate_request),

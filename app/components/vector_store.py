@@ -30,20 +30,34 @@ class ChromaVectorStore:
             collection_name: Name of the ChromaDB collection.
         """
         self.collection_name = collection_name
-        self._client = chromadb.HttpClient(
-            host=settings.chroma_host,
-            port=settings.chroma_port,
-            settings=ChromaSettings(anonymized_telemetry=False),
-        )
+        self._client: Any = None
         self._collection: Any = None
         logger.info(
             "Initialized ChromaDB vector store",
-            host=settings.chroma_host,
-            port=settings.chroma_port,
+            collection=collection_name,
         )
 
     async def initialize(self) -> None:
         """Initialize or get the collection."""
+        if self._client is None:
+            try:
+                self._client = chromadb.HttpClient(
+                    host=settings.chroma_host,
+                    port=settings.chroma_port,
+                    settings=ChromaSettings(anonymized_telemetry=False),
+                )
+            except Exception as e:
+                logger.warning(
+                    "ChromaDB HTTP connection failed, using persistent fallback",
+                    error=str(e),
+                )
+                self._client = chromadb.Client(
+                    settings=ChromaSettings(
+                        is_persistent=True,
+                        persist_directory="./data/chroma",
+                        anonymized_telemetry=False,
+                    )
+                )
         try:
             self._collection = self._client.get_or_create_collection(
                 name=self.collection_name,
@@ -56,15 +70,8 @@ class ChromaVectorStore:
             )
         except Exception as e:
             logger.warning(
-                "ChromaDB connection failed, using in-memory fallback",
+                "Failed to get collection, recreating",
                 error=str(e),
-            )
-            self._client = chromadb.Client(
-                settings=ChromaSettings(
-                    is_persistent=True,
-                    persist_directory="./data/chroma",
-                    anonymized_telemetry=False,
-                )
             )
             self._collection = self._client.get_or_create_collection(
                 name=self.collection_name,
