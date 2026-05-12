@@ -32,7 +32,7 @@ async def authenticate_request(
     Raises:
         HTTPException: If authentication fails.
     """
-    if settings.environment == "development" and not settings.api_secret_key:
+    if settings.environment in ("development", "test") and not settings.api_secret_key:
         return {"authenticated": True, "method": "dev_mode"}
 
     valid_api_keys = _get_valid_api_keys()

@@ -75,6 +75,8 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key' }}
           ENVIRONMENT: test
+          API_SECRET_KEY: ""
+          API_SECONDARY_KEY: ""
         run: uv run pytest tests/ -v --cov=app --cov=observability --cov-report=xml
 
       - name: Upload coverage

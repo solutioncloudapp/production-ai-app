@@ -65,7 +65,7 @@ class CrossEncoderReranker:
         logger.info(
             "Reranking complete",
             num_documents=len(documents),
-            top_score=float(scores.max()) if len(scores) > 0 else 0,
+            top_score=float(max(scores)) if len(scores) > 0 else 0,
         )
 
         return reranked[:top_k]
